@@ -1,15 +1,17 @@
 <?php
 
-declare(strict_types = 1);
+declare( strict_types = 1 );
 
 namespace Tests\Unit;
 
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
 use Tests\resources\ChildUserRepository;
 use Tests\resources\TestData;
 use Tests\resources\User;
+use Tests\resources\UserData;
 use Tests\resources\UserRepository;
 use Tests\resources\WrongUserRepository;
 
@@ -153,7 +155,6 @@ it('will throw an exception without attribute', function () {
 it('can apply builder calls', function () {
     $repository = new UserRepository;
 
-
     expect($repository->whereKey(1)->toSql())
         ->toBe('select * from "users" where "users"."id" = ?')
         ->and($repository->where('id', '>=', 1)->toSql())
@@ -199,7 +200,7 @@ it('can normalize data', function () {
     expect($repository->normalizeData([]))
         ->toBeArray()
         ->toBeEmpty()
-        ->and($repository->normalizeData(null))
+        ->and($repository->normalizeData(NULL))
         ->toBeNull()
         ->and($repository->normalizeData(TestData::from([
             'name'  => 'Oleg Sereda',
@@ -210,4 +211,70 @@ it('can normalize data', function () {
             'name'  => 'Oleg Sereda',
             'email' => 'my@email.com',
         ]);
+});
+
+it('can upsert user', function () {
+    $repository = new UserRepository;
+
+    // Insert a new user via upsert using unique email
+    $affected = $repository->upsert([
+        'name'      => 'Upsert User',
+        'email'     => $email = 'upsert@example.com',
+        'password'  => Hash::make('123456'), // note: upsert does not apply model casts
+        'is_active' => true,
+        'is_admin'  => false,
+    ], 'email');
+
+    expect($affected)->toBeGreaterThan(0);
+
+    assertDatabaseHas('users', [
+        'email'     => $email,
+        'name'      => 'Upsert User',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    expect($repository->count())->toBe(1);
+
+    // Update existing user via upsert on the same unique key
+    $affected = $repository->upsert([
+        'name'      => 'Upsert User 2',
+        'email'     => $email,
+        'password'  => $password = Hash::make('654321'),
+        'is_active' => false,
+        'is_admin'  => true,
+    ], 'email');
+
+    expect($affected)->toBeGreaterThan(0);
+
+    assertDatabaseHas('users', [
+        'email'     => $email,
+        'name'      => 'Upsert User 2',
+        'password'  => $password,
+        'is_active' => false,
+        'is_admin'  => true,
+    ]);
+
+    expect($repository->count())->toBe(1);
+
+    // Update using a Data object to ensure normalization is applied
+    $affected = $repository->upsert(UserData::from([
+        'name'      => 'Upsert User 3',
+        'email'     => $email,
+        'password'  => Hash::make('6543211'),
+        'is_active' => true,
+        'is_admin'  => false,
+    ]), 'email', [ 'name' ]);
+
+    expect($affected)->toBeGreaterThan(0);
+
+    assertDatabaseHas('users', [
+        'email'     => $email,
+        'name'      => 'Upsert User 3',
+        'password'  => $password,
+        'is_active' => false,
+        'is_admin'  => true,
+    ]);
+
+    expect($repository->count())->toBe(1);
 });
