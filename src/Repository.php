@@ -152,9 +152,9 @@ abstract readonly class Repository
      * Performs an upsert operation on the database, inserting or updating records based on unique constraints.
      *
      * @param array<string, mixed>|TData $data     The data to be inserted or updated, either as an array or a Data
-     *                                   object.
+     *                                             object.
      * @param array|string               $uniqueBy The column(s) used to determine uniqueness for the upsert operation.
-     * @param array|null                 $update The columns to be updated if a duplicate is found; use null for
+     * @param array|null                 $update   The columns to be updated if a duplicate is found; use null for
      *                                             default behavior.
      *
      * @return int The number of affected rows.
@@ -168,9 +168,16 @@ abstract readonly class Repository
         );
     }
 
-    public function push()
+    /**
+     * Persists the supplied model and all of its relationships to the database.
+     *
+     * @param Model|TModel $model The model instance to be saved along with its relationships.
+     *
+     * @return bool True if the operation was successful, false otherwise.
+     */
+    public function push(Model $model) : bool
     {
-        $this->makeModel()->push();
+        return $model->push();
     }
 
     /**

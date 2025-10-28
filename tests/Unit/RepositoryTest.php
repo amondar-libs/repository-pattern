@@ -5,16 +5,19 @@ declare( strict_types = 1 );
 namespace Tests\Unit;
 
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Tests\resources\ChildUserRepository;
 use Tests\resources\TestData;
 use Tests\resources\User;
+use Tests\resources\UserAddress;
 use Tests\resources\UserData;
 use Tests\resources\UserRepository;
 use Tests\resources\WrongUserRepository;
 
+use function Pest\Laravel\assertDatabaseCount;
 use function Pest\Laravel\assertDatabaseHas;
 
 it('can make user model', function () {
@@ -277,4 +280,48 @@ it('can upsert user', function () {
     ]);
 
     expect($repository->count())->toBe(1);
+});
+
+it('can push user with all his relations', function () {
+    $repository = new UserRepository;
+
+    $model = $repository->makeModel();
+
+    $model->name = 'Sereda Oleg';
+    $model->email = 'my@email.com';
+    $model->password = '123456';
+    $model->is_active = true;
+    $model->is_admin = false;
+
+    $model->save();
+
+    $model->addresses->push(new UserAddress([
+        'first_line' => '123 Main St',
+        'zip_code'   => '12345',
+        'user_id' => $model->getKey(),
+    ]));
+
+    $model->addresses->push(new UserAddress([
+        'first_line' => '321 Main St',
+        'zip_code'   => '54321',
+        'user_id' => $model->getKey(),
+    ]));
+
+    $repository->push($model);
+
+    assertDatabaseHas('users', [
+        'name' => 'Sereda Oleg',
+    ]);
+
+    assertDatabaseCount('user_addresses', 2);
+
+    $model = $model->fresh(['addresses']);
+
+    $model->addresses[1]->first_line = 'Oleg street';
+
+    $repository->push($model);
+
+    assertDatabaseHas('user_addresses', [
+        'first_line' => 'Oleg street',
+    ]);
 });
