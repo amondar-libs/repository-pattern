@@ -1,0 +1,162 @@
+<?php
+
+declare(strict_types = 1);
+
+namespace Amondar\RepositoryPattern;
+
+use Amondar\ClassAttributes\Libraries\Attributes;
+use Amondar\RepositoryPattern\Attributes\UseModel;
+use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
+use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
+use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use ReflectionException;
+use Spatie\LaravelData\Data;
+
+/**
+ * Class Repository
+ *
+ * @template TModel
+ * @template TData
+ *
+ * @see    Builder
+ *
+ * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
+ * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
+ *
+ * @mixin Builder<TModel>
+ */
+abstract readonly class Repository
+{
+    /**
+     * Model class to use in repository calls.
+     *
+     * @var class-string<TModel>
+     */
+    private string $modelClass;
+
+    /**
+     * Initializes the class by loading attributes from the specified model class.
+     *
+     * @return void
+     *
+     * @throws RepositoryModelNotFound|ReflectionException If no attribute is found for the given class.
+     */
+    public function __construct()
+    {
+        $attribute = (new Attributes(static::class))->loadFromClass(UseModel::class, ascend: true);
+
+        if (is_null($attribute)) {
+            throw RepositoryModelNotFound::make(static::class);
+        }
+
+        $this->modelClass = $attribute->modelClass;
+    }
+
+    /**
+     * Dynamically retrieves the value of a property.
+     *
+     * @param  string  $name  The name of the property to access.
+     * @return HigherOrderQuietlyProxy|HigherOrderRepositoryTransactionProxy|null
+     */
+    public function __get(string $name)
+    {
+        if ($name === 'quietly') {
+            return new HigherOrderQuietlyProxy($this);
+        }
+
+        if ($name === 'transaction') {
+            return new HigherOrderRepositoryTransactionProxy($this);
+        }
+
+        throw new \RuntimeException("Undefined property: $name");
+    }
+
+    /**
+     * Dynamically handles method calls on the query builder instance.
+     *
+     * @param  string  $name  The name of the method being called.
+     * @param  array  $arguments  The arguments passed to the method.
+     * @return mixed The result of the method call on the query builder.
+     */
+    public function __call(string $name, array $arguments)
+    {
+        return $this->query()->$name(...$arguments);
+    }
+
+    /**
+     * Retrieves the class name of the model associated with the repository.
+     *
+     * @return class-string<TModel> The fully qualified class name of the model.
+     */
+    final public function model(): string
+    {
+        return $this->modelClass;
+    }
+
+    /**
+     * Creates and returns a new instance of the model class.
+     *
+     * @return TModel An instance of the specified model class.
+     */
+    final public function makeModel(): Model
+    {
+        return new ($this->model())();
+    }
+
+    /**
+     * Prepares and returns a new query builder instance from the model.
+     *
+     * @return Builder<TModel> A query builder instance for the model.
+     */
+    final public function query(): Builder
+    {
+        return $this->makeModel()->query();
+    }
+
+    /**
+     * Creates and saves a new model instance with the provided data.
+     *
+     * @param  array<string, mixed>|TData  $data  Input data to populate the model. Can be an array or an instance of the
+     *                                            Data class.
+     * @return TModel|Model Return a created model instance.
+     */
+    final public function create(array|Data $data): Model
+    {
+        return tap($this->makeModel()->fill(
+            $this->normalizeData($data)
+        ))->save();
+    }
+
+    /**
+     * Updates the given model with the provided data.
+     *
+     * @param  Model  $model  The model instance to update.
+     * @param  array<string, mixed>|TData  $data  The data to update the model with. Can be an associative array
+     *                                            or an instance of the Data class which will be converted to an array.
+     * @return TModel|Model The updated model instance.
+     */
+    final public function update(Model $model, array|Data $data): Model
+    {
+        return tap($model)->update(
+            $this->normalizeData($data)
+        );
+    }
+
+    /**
+     * Processes and normalizes the given data to a consistent format.
+     *
+     * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
+     * @return array|null The normalized data.
+     */
+    final public function normalizeData(array|Data|null $data): ?array
+    {
+        if ($data instanceof Data) {
+            return $data->toArray();
+        }
+
+        return $data;
+
+    }
+}

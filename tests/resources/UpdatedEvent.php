@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types = 1);
+
+namespace Tests\resources;
+
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Class CreatedEvent
+ *
+ * @author Amondar-SO
+ */
+readonly class UpdatedEvent
+{
+    use Dispatchable, SerializesModels;
+
+    /**
+     * CreatingEvent constructor.
+     */
+    public function __construct(public User $model, public array $data, public array $relations)
+    {
+        //
+    }
+
+}
