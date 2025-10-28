@@ -7,6 +7,7 @@ namespace Tests\Unit;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Tests\resources\ChildUserRepository;
 use Tests\resources\TestData;
 use Tests\resources\User;
 use Tests\resources\UserRepository;
@@ -51,7 +52,7 @@ it('can create user quietly', function () {
         $createdEvent = 'eloquent.created: ' . User::class,
     ]);
 
-    $repository = new UserRepository;
+    $repository = new ChildUserRepository;
 
     // Global laravel db is transactional.
     expect(DB::transactionLevel())
