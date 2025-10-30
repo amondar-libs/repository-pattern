@@ -40,7 +40,7 @@ trait HasUpdateCommand
      * @param  array  $data  The data array to be updated with model relation information, passed by reference.
      * @return array Returns the array with changes applied to model relations.
      */
-    abstract public function storeModelRelations(Model $model, array &$data): array;
+    abstract protected function storeModelRelations(Model $model, array &$data): array;
 
     /**
      * Updates an existing model with the provided data, performing normalization,

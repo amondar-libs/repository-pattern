@@ -149,6 +149,7 @@ $user = $repo->transaction->create([
 
 ### Combine: transaction + quietly
 Sometimes you want both: atomic writes and no model events.
+
 ```php
 $repo = new UserRepository();
 
@@ -163,6 +164,16 @@ $user = $repo->transaction->quietly->create([
 
 Tip: Laravel’s `ShouldDispatchAfterCommit` events will be dispatched only after a successful commit when used inside a transaction. If the transaction rolls back, those events won’t be dispatched.
 
+### Run transaction with pessimistic locking 
+Sometimes you want to make an atomic update with pessimistic lock.
+
+```php
+$repo = new UserRepository();
+
+$user = $repo->transaction->forUpdate(1, function(User $user, UserRepository $repository){
+    // do Some logic under SELECT FRO UPDATE lock.
+});
+```
 
 ## Service layer (optional)
 You can build services on top of repositories. The Service base class provides a transaction helper as well. Example with handy create/update traits.

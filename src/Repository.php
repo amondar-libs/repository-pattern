@@ -20,14 +20,12 @@ use Spatie\LaravelData\Data;
  * @template TModel
  * @template TData
  *
- * @see    Builder
- *
  * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
  * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
  *
- * @mixin Builder<TModel>
+ * @implements Contracts\RepositoryContract<TModel, TData>
  */
-abstract readonly class Repository
+abstract readonly class Repository implements Contracts\RepositoryContract
 {
     /**
      * Model class to use in repository calls.
@@ -61,30 +59,30 @@ abstract readonly class Repository
      *
      * @return HigherOrderQuietlyProxy|HigherOrderRepositoryTransactionProxy|null
      */
-    public function __get(string $name)
+    public function __get(mixed $key)
     {
-        if ( $name === 'quietly' ) {
+        if ( $key === 'quietly' ) {
             return new HigherOrderQuietlyProxy($this);
         }
 
-        if ( $name === 'transaction' ) {
+        if ( $key === 'transaction' ) {
             return new HigherOrderRepositoryTransactionProxy($this);
         }
 
-        throw new \RuntimeException("Undefined property: $name");
+        throw new \RuntimeException("Undefined property: $key");
     }
 
     /**
      * Dynamically handles method calls on the query builder instance.
      *
-     * @param string $name      The name of the method being called.
-     * @param array  $arguments The arguments passed to the method.
+     * @param string $method     The name of the method being called.
+     * @param array  $parameters The arguments passed to the method.
      *
      * @return mixed The result of the method call on the query builder.
      */
-    public function __call(string $name, array $arguments)
+    public function __call(mixed $method, mixed $parameters)
     {
-        return $this->query()->$name(...$arguments);
+        return $this->query()->$method(...$parameters);
     }
 
     /**
@@ -100,7 +98,7 @@ abstract readonly class Repository
     /**
      * Creates and returns a new instance of the model class.
      *
-     * @return TModel An instance of the specified model class.
+     * @return TModel|Model An instance of the specified model class.
      */
     final public function makeModel() : Model
     {

@@ -4,6 +4,8 @@ declare(strict_types = 1);
 
 namespace Tests\resources;
 
+use Amondar\RepositoryPattern\Contracts\CreationCommandContract;
+use Amondar\RepositoryPattern\Contracts\UpdateCommandContract;
 use Amondar\RepositoryPattern\Extensions\HasCreateCommand;
 use Amondar\RepositoryPattern\Extensions\HasUpdateCommand;
 use Amondar\RepositoryPattern\Service;
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @author Amondar-SO
  */
-readonly class UserService extends Service
+class UserService extends Service implements CreationCommandContract, UpdateCommandContract
 {
     /**
      * @use HasCreateCommand<User, UserData, UserRepository>
@@ -27,7 +29,7 @@ readonly class UserService extends Service
     /**
      * UserService constructor.
      */
-    public function __construct(private UserRepository $userRepository)
+    public function __construct(private readonly UserRepository $userRepository)
     {
         //
     }
@@ -69,7 +71,7 @@ readonly class UserService extends Service
         UpdatingEvent::dispatch($model, $data);
     }
 
-    protected function updatedHook(Model $model, array $data, array $relations): void
+    protected function updatedHook(User $model, array $data, array $relations): void
     {
         UpdatedEvent::dispatch($model, $data, $relations);
     }

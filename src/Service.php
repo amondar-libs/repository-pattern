@@ -17,7 +17,7 @@ use Amondar\RepositoryPattern\Proxies\HigherOrderServiceTransactionProxy;
  *
  * @author Amondar-SO
  */
-abstract readonly class Service
+abstract class Service
 {
     /**
      * Magic method to handle dynamic property access.

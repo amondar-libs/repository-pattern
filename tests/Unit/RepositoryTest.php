@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 
 namespace Tests\Unit;
 
+use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
@@ -298,13 +298,13 @@ it('can push user with all his relations', function () {
     $model->addresses->push(new UserAddress([
         'first_line' => '123 Main St',
         'zip_code'   => '12345',
-        'user_id' => $model->getKey(),
+        'user_id'    => $model->getKey(),
     ]));
 
     $model->addresses->push(new UserAddress([
         'first_line' => '321 Main St',
         'zip_code'   => '54321',
-        'user_id' => $model->getKey(),
+        'user_id'    => $model->getKey(),
     ]));
 
     $repository->push($model);
@@ -315,9 +315,9 @@ it('can push user with all his relations', function () {
 
     assertDatabaseCount('user_addresses', 2);
 
-    $model = $model->fresh(['addresses']);
+    $model = $model->fresh([ 'addresses' ]);
 
-    $model->addresses[1]->first_line = 'Oleg street';
+    $model->addresses[ 1 ]->first_line = 'Oleg street';
 
     $repository->push($model);
 
@@ -325,3 +325,30 @@ it('can push user with all his relations', function () {
         'first_line' => 'Oleg street',
     ]);
 });
+
+it('can run transaction with callback', function () {
+    $repository = new UserRepository;
+
+    expect($repository->transaction->withTrashed->shouldUseTrashed())
+        ->toBeTrue()
+        ->and($repository->transaction->shouldUseTrashed())
+        ->toBeFalse();
+
+    $model = $repository->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    $result = $repository->transaction->withTrashed->forUpdate($model->getKey(), function (User $model, RepositoryContract $repository) {
+        $repository->update($model, [
+            'name' => 'Oleg Sereda 2',
+        ]);
+
+        return $model;
+    });
+
+    expect($result->name)->toBe('Oleg Sereda 2');
+})->group('testing');
