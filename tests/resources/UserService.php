@@ -9,7 +9,6 @@ use Amondar\RepositoryPattern\Contracts\UpdateCommandContract;
 use Amondar\RepositoryPattern\Extensions\HasCreateCommand;
 use Amondar\RepositoryPattern\Extensions\HasUpdateCommand;
 use Amondar\RepositoryPattern\Service;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class UserService

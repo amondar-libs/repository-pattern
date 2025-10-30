@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Amondar\RepositoryPattern;
 
 use Amondar\RepositoryPattern\Proxies\HigherOrderServiceTransactionProxy;
+use RuntimeException;
 
 /**
  * Class Service
@@ -31,7 +32,7 @@ abstract class Service
             return new HigherOrderServiceTransactionProxy($this);
         }
 
-        throw new \RuntimeException("Undefined property: $name");
+        throw new RuntimeException("Undefined property: $name");
     }
 
     /**

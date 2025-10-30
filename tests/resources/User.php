@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Tests\resources;
 
@@ -18,7 +18,12 @@ class User extends Model
 
     protected static $unguarded = true;
 
-    protected function casts() : array
+    public function addresses(): User|\Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserAddress::class);
+    }
+
+    protected function casts(): array
     {
         return [
             'password'  => 'hashed',
@@ -26,10 +31,4 @@ class User extends Model
             'is_admin'  => 'boolean',
         ];
     }
-
-    public function addresses() : User|\Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(UserAddress::class);
-    }
-
 }

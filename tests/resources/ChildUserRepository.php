@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Tests\resources;
 
 /**
@@ -7,8 +9,4 @@ namespace Tests\resources;
  *
  * @author Amondar-SO
  */
-readonly class ChildUserRepository extends UserRepository
-{
-
-
-}
+readonly class ChildUserRepository extends UserRepository {}

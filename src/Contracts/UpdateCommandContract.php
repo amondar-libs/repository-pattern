@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Amondar\RepositoryPattern\Contracts;
 
 use Spatie\LaravelData\Data;
@@ -14,7 +16,6 @@ use Spatie\LaravelData\Data;
  */
 interface UpdateCommandContract
 {
-
     /**
      * Updates an existing model with the provided data, performing normalization,
      * triggers for hooks, and handling model relationships.
@@ -25,5 +26,4 @@ interface UpdateCommandContract
      * @return TModel Returns the updated model instance, with related data loaded if applicable.
      */
     public function update($model, array|Data $data);
-
 }

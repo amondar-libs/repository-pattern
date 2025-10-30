@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Tests\resources;
 
@@ -31,21 +31,20 @@ class WrongUserService extends Service implements CreationCommandContract
         //
     }
 
-    protected function repository() : UserRepository
+    protected function repository(): UserRepository
     {
         return $this->userRepository;
     }
 
-    protected function creatingHook(array &$data) : void
+    protected function creatingHook(array &$data): void
     {
         CreatingEvent::dispatch($data[ 'email' ]);
     }
 
-    protected function createdHook(User $model, array $data, array $relations) : void
+    protected function createdHook(User $model, array $data, array $relations): void
     {
         DB::table('outbox_not_exists')->insert([
             $data,
         ]);
     }
-
 }

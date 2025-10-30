@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Tests\Unit;
 
@@ -203,7 +203,7 @@ it('can normalize data', function () {
     expect($repository->normalizeData([]))
         ->toBeArray()
         ->toBeEmpty()
-        ->and($repository->normalizeData(NULL))
+        ->and($repository->normalizeData(null))
         ->toBeNull()
         ->and($repository->normalizeData(TestData::from([
             'name'  => 'Oleg Sereda',

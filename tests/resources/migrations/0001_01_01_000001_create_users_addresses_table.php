@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 use Illuminate\Database\Schema\Blueprint;
 
@@ -9,7 +9,7 @@ return new class extends Illuminate\Database\Migrations\Migration
     /**
      * Run the migrations.
      */
-    public function up() : void
+    public function up(): void
     {
         Schema::create('user_addresses', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -23,9 +23,8 @@ return new class extends Illuminate\Database\Migrations\Migration
     /**
      * Reverse the migrations.
      */
-    public function down() : void
+    public function down(): void
     {
         Schema::dropIfExists('user_addresses');
     }
-
 };

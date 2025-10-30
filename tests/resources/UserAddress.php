@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Tests\resources;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -12,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
  */
 class UserAddress extends Model
 {
-
     use HasUuids;
 
     protected static $unguarded = true;
