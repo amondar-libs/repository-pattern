@@ -139,7 +139,9 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     final public function update(Model $model, array|Data $data): Model
     {
-        return tap($model->forceFill($this->normalizeData($data)))->save();
+        return tap($model)->update(
+            $this->normalizeData($data)
+        );
     }
 
     /**
