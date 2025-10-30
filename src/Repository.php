@@ -110,7 +110,8 @@ abstract readonly class Repository
     /**
      * Prepares and returns a new query builder instance from the model.
      *
-     * @return Builder<TModel> A query builder instance for the model.
+     * @return Builder<TModel>|TModel Return a query builder instance or model instance (to solve IDE understanding of
+     *                                scopes).
      */
     final public function query() : Builder
     {
