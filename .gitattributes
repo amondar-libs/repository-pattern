@@ -4,3 +4,5 @@
 /pint.json export-ignore
 /composer.lock export-ignore
 /LICENSE.md export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
