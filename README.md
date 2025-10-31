@@ -171,7 +171,7 @@ Sometimes you want to make an atomic update with pessimistic lock.
 $repo = new UserRepository();
 
 $user = $repo->transaction->forUpdate(1, function(User $user, UserRepository $repository){
-    // do Some logic under SELECT FRO UPDATE lock.
+    // do Some logic under SELECT FOR UPDATE lock.
 });
 ```
 
