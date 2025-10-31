@@ -58,7 +58,7 @@ it('can create user', function () {
 
         return true;
     });
-});
+})->group('service');
 
 it('can update user', function () {
     Event::fake([
@@ -113,7 +113,7 @@ it('can update user', function () {
 
         return true;
     });
-});
+})->group('service');
 
 it('should fire exception and rollback transaction', function () {
     Event::fake([
@@ -132,4 +132,4 @@ it('should fire exception and rollback transaction', function () {
 
     // Event should wait commit transaction, but it failed.
     Event::assertNotDispatched(CreatingEvent::class);
-});
+})->group('service');

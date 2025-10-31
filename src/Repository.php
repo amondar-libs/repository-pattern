@@ -6,9 +6,11 @@ namespace Amondar\RepositoryPattern;
 
 use Amondar\ClassAttributes\Libraries\Attributes;
 use Amondar\RepositoryPattern\Attributes\UseModel;
+use Amondar\RepositoryPattern\Contracts\Lockable;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
 use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
+use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use ReflectionException;
@@ -23,6 +25,7 @@ use Spatie\LaravelData\Data;
  *
  * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
  * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
+ * @property-read HigherOrderUnlockedProxy<TModel, TData>|static              $unlocked
  *
  * @implements Contracts\RepositoryContract<TModel, TData>
  */
@@ -34,6 +37,11 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      * @var class-string<TModel>
      */
     private string $modelClass;
+
+    /**
+     * Indicates whether the repository uses lockable models.
+     */
+    private bool $useLockable;
 
     /**
      * Initializes the class by loading attributes from the specified model class.
@@ -51,13 +59,15 @@ abstract readonly class Repository implements Contracts\RepositoryContract
         }
 
         $this->modelClass = $attribute->modelClass;
+
+        $this->useLockable = is_subclass_of($this->modelClass, Lockable::class);
     }
 
     /**
      * Dynamically retrieves the value of a property.
      *
-     * @param  string  $name  The name of the property to access.
-     * @return HigherOrderQuietlyProxy|HigherOrderRepositoryTransactionProxy|null
+     *
+     * @return HigherOrderQuietlyProxy|HigherOrderRepositoryTransactionProxy|HigherOrderUnlockedProxy|null
      */
     public function __get(mixed $key)
     {
@@ -67,6 +77,10 @@ abstract readonly class Repository implements Contracts\RepositoryContract
 
         if ($key === 'transaction') {
             return new HigherOrderRepositoryTransactionProxy($this);
+        }
+
+        if ($key === 'unlocked' && $this->useLockable) {
+            return new HigherOrderUnlockedProxy($this);
         }
 
         throw new RuntimeException("Undefined property: $key");

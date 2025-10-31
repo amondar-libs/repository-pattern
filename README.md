@@ -164,7 +164,7 @@ $user = $repo->transaction->quietly->create([
 
 Tip: Laravel’s `ShouldDispatchAfterCommit` events will be dispatched only after a successful commit when used inside a transaction. If the transaction rolls back, those events won’t be dispatched.
 
-### Run transaction with pessimistic locking 
+### Run transaction with pessimistic locking (avoid lost updates)
 Sometimes you want to make an atomic update with pessimistic lock.
 
 ```php
@@ -174,6 +174,102 @@ $user = $repo->transaction->forUpdate(1, function(User $user, UserRepository $re
     // do Some logic under SELECT FOR UPDATE lock.
 });
 ```
+
+Tip: You can add `->withTrashed->forUpdate(...)` after transaction to get a soft-deleted model viable for update.
+
+
+#### Optimistic locking (avoid lost updates)
+Besides pessimistic locks, the package also supports optimistic locking to prevent lost updates without holding row locks.
+
+How it works:
+- Add the HasOptimisticLock trait to your Eloquent model, implement the Lockable contract, and point to a numeric version column using the VersionField attribute.
+- Each successful save() increments the version column. If a concurrent update occurs using a stale instance (older version), an OptimisticLockException is thrown.
+- You can bypass the check when needed using saveUnlocked() on the model or by calling methods via the repository's unlocked proxy.
+
+Migrations:
+
+```php
+Schema::create('some_versioned', function (Blueprint $table) {
+    $table->...->primary();
+    //...
+    // Add custom field to test with attribute.
+    $table->versionable('version_field');
+    //or
+    $table->versionable('version_field')->index()->nullable()->...;
+    //...
+});
+```
+
+Model setup:
+```php
+use Illuminate\Database\Eloquent\Model;
+use Amondar\RepositoryPattern\Concerns\HasOptimisticLock;
+use Amondar\RepositoryPattern\Attributes\VersionField;
+use Amondar\RepositoryPattern\Contracts\Lockable;
+
+#[VersionField('version')]
+class Post extends Model implements Lockable
+{
+    use HasOptimisticLock;
+
+    protected $fillable = ['title', 'body'];
+}
+```
+
+Raw model usage:
+```php
+use Amondar\RepositoryPattern\Exceptions\OptimisticLockException;
+
+$post = Post::create(['title' => 'Hello', 'body' => '...']); // version = 1
+
+$a = $post->fresh();
+$b = $post->fresh();
+
+$a->title = 'A';
+$a->save(); // version becomes 2
+
+$b->title = 'B';
+
+try {
+    $b->save(); // throws OptimisticLockException (stale version: 1 vs current: 2)
+} catch (OptimisticLockException $e) {
+    // handle or retry logic
+}
+
+// Bypass the optimistic lock when you are sure it is safe
+$b->title = 'B';
+$b->saveUnlocked();            // 1) bypass via helper
+Post::unlocked(fn() => $b->save()); // 2) or run within an unlocked callback
+```
+
+Usage through a repository:
+```php
+use Amondar\RepositoryPattern\Attributes\UseModel;
+use Amondar\RepositoryPattern\Repository;
+
+/**
+ * @extends Repository<Post>
+ */
+#[UseModel(Post::class)]
+readonly class PostRepository extends Repository {}
+
+$repo = new PostRepository();
+
+$model = $repo->create(['title' => 'Hello', 'body' => '...']); // version = 1
+$stale = $model->fresh();
+
+$model = $repo->update($model, ['title' => 'A']); // version = 2
+
+// Throws OptimisticLockException because $stale has version = 1
+$repo->update($stale, ['title' => 'B']);
+
+// Bypass optimistic locking via the higher-order proxy
+$repo->unlocked->update($stale, ['title' => 'B']); // succeeds without changing version semantics
+```
+
+Tips:
+- Default starting version is 1; you can override it by setting public static `int $defaultLockVersion` on your model.
+- The version column must exist on the table and be an integer-compatible type.
 
 ## Service layer (optional)
 You can build services on top of repositories. The Service base class provides a transaction helper as well. Example with handy create/update traits.

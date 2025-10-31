@@ -16,11 +16,11 @@ use Throwable;
  * @template TModel
  * @template TData
  *
+ * @mixin Repository<TModel, TData>
+ *
  * @see Repository
  *
  * @property-read static $withTrashed
- *
- * @mixin \Amondar\RepositoryPattern\Repository<TModel, TData>
  */
 readonly class HigherOrderRepositoryTransactionProxy
 {

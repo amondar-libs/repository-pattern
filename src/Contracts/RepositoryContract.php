@@ -6,6 +6,7 @@ namespace Amondar\RepositoryPattern\Contracts;
 
 use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
+use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
@@ -22,6 +23,7 @@ use Spatie\LaravelData\Data;
  *
  * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
  * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
+ * @property-read HigherOrderUnlockedProxy<TModel, TData>|static              $unlocked
  *
  * @author Amondar-SO
  */

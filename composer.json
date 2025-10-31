@@ -33,6 +33,13 @@
             "Tests\\": "tests/"
         }
     },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Amondar\\RepositoryPattern\\ServiceProvider"
+      ]
+    }
+  },
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true

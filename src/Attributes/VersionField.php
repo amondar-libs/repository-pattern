@@ -7,17 +7,17 @@ namespace Amondar\RepositoryPattern\Attributes;
 use Attribute;
 
 /**
- * Class UseModel
+ * Class VersionField
  *
  * @author Amondar-SO
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-readonly class UseModel
+readonly class VersionField
 {
     /**
-     * UseModel constructor.
+     * VersionField constructor.
      */
-    public function __construct(public string $modelClass)
+    public function __construct(public string $field)
     {
         //
     }

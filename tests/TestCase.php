@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Tests;
 
+use Amondar\RepositoryPattern\ServiceProvider;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -19,6 +20,7 @@ abstract class TestCase extends CoreTestCase
     {
         return [
             LaravelDataServiceProvider::class,
+            ServiceProvider::class,
         ];
     }
 

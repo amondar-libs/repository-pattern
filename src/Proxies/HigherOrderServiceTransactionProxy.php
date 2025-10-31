@@ -14,7 +14,7 @@ use Throwable;
  * @template TModel
  * @template TData
  *
- * @mixin \Amondar\RepositoryPattern\Service<TModel, TData>
+ * @mixin Service<TModel, TData>
  *
  * @see Service
  */
