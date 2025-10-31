@@ -182,9 +182,9 @@ Tip: You can add `->withTrashed->forUpdate(...)` after transaction to get a soft
 Besides pessimistic locks, the package also supports optimistic locking to prevent lost updates without holding row locks.
 
 How it works:
-- Add the HasOptimisticLock trait to your Eloquent model, implement the Lockable contract, and point to a numeric version column using the VersionField attribute.
-- Each successful save() increments the version column. If a concurrent update occurs using a stale instance (older version), an OptimisticLockException is thrown.
-- You can bypass the check when needed using saveUnlocked() on the model or by calling methods via the repository's unlocked proxy.
+- Add the `HasOptimisticLock` trait to your Eloquent model, implement the Lockable contract, and point to a numeric version column using the `VersionField` attribute.
+- Each successful `->save()` (e.g `->update()`) increments the `version` column. If a concurrent update occurs using a stale instance (older version), an `OptimisticLockException` is thrown.
+- You can bypass the check when needed using `saveUnlocked()` on the model or by calling methods via the repository's `...->unlocked->...` proxy.
 
 Migrations:
 
