@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace Amondar\RepositoryPattern\Proxies;
 
+use Amondar\RepositoryPattern\Enums\LockType;
 use Amondar\RepositoryPattern\Repository;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -27,11 +28,17 @@ readonly class HigherOrderRepositoryTransactionProxy
     /**
      * HigherOrderDBTransactionProxy constructor.
      *
-     * @param Repository<TModel, TData> $repository
-     * @param bool                      $useTrashed
-     * @param int                       $transactionLevel
+     * @param Repository<TModel, TData>                 $repository
+     * @param bool                                      $useTrashed
+     * @param \Amondar\RepositoryPattern\Enums\LockType $lockType
+     * @param int                                       $transactionLevel
      */
-    public function __construct(private Repository $repository, private bool $useTrashed = false, private int $transactionLevel = 0)
+    public function __construct(
+        private Repository $repository,
+        private bool $useTrashed = false,
+        private LockType $lockType = LockType::FOR_UPDATE,
+        private int $transactionLevel = 0
+    )
     {
         //
     }
@@ -82,7 +89,17 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function onLevel(int $level) : static
     {
-        return new static($this->repository, $this->useTrashed, $level);
+        return new static($this->repository, $this->useTrashed, $this->lockType, $level);
+    }
+
+    /**
+     * Creates a new instance of the class with a shared lock type.
+     *
+     * @return static A new instance configured with LockType::SHARED.
+     */
+    public function asShared() : static
+    {
+        return new static($this->repository, $this->useTrashed, LockType::SHARED, $this->transactionLevel);
     }
 
     /**
@@ -90,48 +107,42 @@ readonly class HigherOrderRepositoryTransactionProxy
      *
      * @template TResult
      *
-     * @param string|int                                          $key      The primary key of the record to lock for
-     *                                                                      update.
-     * @param Closure(TModel, Repository<TModel, TData>): TResult $callback A callback function that processes the
-     *                                                                      locked record and repository.
+     * @param string|int                                               $key      The primary key of the record to lock
+     *                                                                           for update.
+     * @param Closure(TModel, Repository<TModel, TData>): TResult|NULL $callback A callback function that processes the
+     *                                                                           locked record and repository.
      *
-     * @return TResult
+     * @return ($callback is null ? TModel : TResult)
      * @throws \Throwable
      */
-    public function forUpdate(string|int $key, Closure $callback)
+    public function forUpdate(string|int $key, ?Closure $callback = NULL)
     {
         if ( DB::transactionLevel() === $this->transactionLevel ) {
             return DB::transaction(function () use ($key, $callback) {
-                return $this->runForUpdate($key, $callback);
+                return $callback($this->getLock($key), $this->repository);
             });
         }
 
-        return $this->runForUpdate($key, $callback);
+        return $callback($this->getLock($key), $this->repository);
     }
 
     /**
      * Executes the provided callback within a "for update" lock on the specified model.
      *
-     * @template TResult
+     * @param string|int $key The key identifying the model to lock.
      *
-     * @param string|int                                          $key      The key identifying the model to lock.
-     * @param Closure(TModel, Repository<TModel, TData>): TResult $callback The callback to execute with the locked
-     *                                           model and repository.
-     *
-     * @return TResult The result of the executed callback.
+     * @return TModel
      */
-    private function runForUpdate(string|int $key, Closure $callback)
+    public function getLock(string|int $key)
     {
-        $model = $this->repository
+        return $this->repository
             ->whereKey($key)
-            ->lockForUpdate()
+            ->{$this->lockType->value}()
             ->when(
                 $this->useTrashed,
                 fn($query) => $query->hasMacro('withTrashed') ? $query->withTrashed() : $query
             )
             ->firstOrFail();
-
-        return $callback($model, $this->repository);
     }
 
     /**

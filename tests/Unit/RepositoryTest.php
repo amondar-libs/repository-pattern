@@ -326,6 +326,22 @@ it('can push user with all his relations', function () {
     ]);
 })->group('repository');
 
+it('can get pessimistic lock', function () {
+    $repository = new UserRepository;
+
+    $model = $repository->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    $result = $repository->transaction->withTrashed->getLock($model->getKey());
+
+    expect($result->name)->toBe('Oleg Sereda');
+})->group('repository');
+
 it('can run transaction pessimistic lock', function () {
     $repository = new UserRepository;
 
@@ -357,7 +373,8 @@ it('can run transaction pessimistic lock', function () {
 
     expect($result->name)->toBe('Oleg Sereda 2');
 
-    $result = $repository->transaction->withTrashed->forUpdate($model->getKey(),
+    $result = $repository->transaction->withTrashed->asShared()->forUpdate(
+        $model->getKey(),
         function (User $model, RepositoryContract $repository) {
             // Check that level not changed.
             // Remember that tests running with RefreshDatabase trait, so all db actions are in transactions.
@@ -368,7 +385,8 @@ it('can run transaction pessimistic lock', function () {
             ]);
 
             return $model;
-        });
+        }
+    );
 
     expect($result->name)->toBe('Oleg Sereda 3');
 })->group('repository');
