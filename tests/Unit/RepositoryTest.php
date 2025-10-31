@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare( strict_types = 1 );
 
 namespace Tests\Unit;
 
@@ -203,7 +203,7 @@ it('can normalize data', function () {
     expect($repository->normalizeData([]))
         ->toBeArray()
         ->toBeEmpty()
-        ->and($repository->normalizeData(null))
+        ->and($repository->normalizeData(NULL))
         ->toBeNull()
         ->and($repository->normalizeData(TestData::from([
             'name'  => 'Oleg Sereda',
@@ -342,13 +342,33 @@ it('can run transaction pessimistic lock', function () {
         'is_admin'  => false,
     ]);
 
-    $result = $repository->transaction->withTrashed->forUpdate($model->getKey(), function (User $model, RepositoryContract $repository) {
-        $repository->update($model, [
-            'name' => 'Oleg Sereda 2',
-        ]);
+    $result = $repository->transaction->withTrashed->onLevel(1)
+                                                   ->forUpdate($model->getKey(),
+                                                       function (User $model, RepositoryContract $repository) {
+                                                           // Check for the new level of transaction.
+                                                           expect(DB::transactionLevel())->toBe(2);
 
-        return $model;
-    });
+                                                           $repository->update($model, [
+                                                               'name' => 'Oleg Sereda 2',
+                                                           ]);
+
+                                                           return $model;
+                                                       });
 
     expect($result->name)->toBe('Oleg Sereda 2');
+
+    $result = $repository->transaction->withTrashed->forUpdate($model->getKey(),
+        function (User $model, RepositoryContract $repository) {
+            // Check that level not changed.
+            // Remember that tests running with RefreshDatabase trait, so all db actions are in transactions.
+            expect(DB::transactionLevel())->toBe(1);
+
+            $repository->update($model, [
+                'name' => 'Oleg Sereda 3',
+            ]);
+
+            return $model;
+        });
+
+    expect($result->name)->toBe('Oleg Sereda 3');
 })->group('repository');

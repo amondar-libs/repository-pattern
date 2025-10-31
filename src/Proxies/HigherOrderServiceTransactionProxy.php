@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare( strict_types = 1 );
 
 namespace Amondar\RepositoryPattern\Proxies;
 
@@ -23,24 +23,42 @@ readonly class HigherOrderServiceTransactionProxy
     /**
      * HigherOrderDBTransactionProxy constructor.
      *
-     * @param  Service<TModel, TData>  $object
+     * @param Service<TModel, TData> $service
      */
-    public function __construct(private Service $object)
+    public function __construct(private Service $service, private int $transactionLevel = 0)
     {
         //
     }
 
     /**
+     * Sets the transaction level and returns a new instance of the class.
+     *
+     * @param int $level The transaction level to set.
+     *
+     * @return static A new instance of the class with the specified transaction level.
+     */
+    public function onLevel(int $level) : static
+    {
+        return new static($this->service, $level);
+    }
+
+    /**
      * Proxy a method call onto the collection items.
      *
-     * @param  string  $method
-     * @param  array  $parameters
+     * @param string $method
+     * @param array  $parameters
+     *
      * @return mixed
      *
      * @throws Throwable
      */
-    public function __call($method, $parameters)
+    public function __call(string $method, array $parameters)
     {
-        return DB::transaction(fn() => $this->object->{$method}(...$parameters));
+        if ( DB::transactionLevel() === $this->transactionLevel ) {
+            return DB::transaction(fn() => $this->service->{$method}(...$parameters));
+        }
+
+        return $this->service->{$method}(...$parameters);
     }
+
 }

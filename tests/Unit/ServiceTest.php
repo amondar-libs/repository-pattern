@@ -120,7 +120,7 @@ it('should fire exception and rollback transaction', function () {
         CreatingEvent::class,
     ]);
 
-    expect(fn() => App::make(\Tests\resources\WrongUserService::class)->transaction->create(
+    expect(fn() => App::make(\Tests\resources\WrongUserService::class)->transaction->onLevel(1)->create(
         UserData::from([
             'name'      => 'Amondar-SO',
             'email'     => 'my@email.com',
