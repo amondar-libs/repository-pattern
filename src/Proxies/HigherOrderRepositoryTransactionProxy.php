@@ -6,7 +6,6 @@ namespace Amondar\RepositoryPattern\Proxies;
 
 use Amondar\RepositoryPattern\Enums\LockType;
 use Amondar\RepositoryPattern\Repository;
-use Closure;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -107,15 +106,15 @@ readonly class HigherOrderRepositoryTransactionProxy
      *
      * @template TResult
      *
-     * @param string|int                                               $key      The primary key of the record to lock
+     * @param string|int                                           $key          The primary key of the record to lock
      *                                                                           for update.
-     * @param Closure(TModel, Repository<TModel, TData>): TResult|NULL $callback A callback function that processes the
+     * @param callable(TModel, Repository<TModel, TData>): TResult $callback     A callback function that processes the
      *                                                                           locked record and repository.
      *
-     * @return ($callback is null ? TModel : TResult)
+     * @return TResult
      * @throws \Throwable
      */
-    public function forUpdate(string|int $key, ?Closure $callback = NULL)
+    public function forUpdate(string|int $key, callable $callback)
     {
         if ( DB::transactionLevel() === $this->transactionLevel ) {
             return DB::transaction(function () use ($key, $callback) {

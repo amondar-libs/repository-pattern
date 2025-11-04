@@ -360,7 +360,7 @@ it('can run transaction pessimistic lock', function () {
 
     $result = $repository->transaction->withTrashed->onLevel(1)
                                                    ->forUpdate($model->getKey(),
-                                                       function (User $model, RepositoryContract $repository) {
+                                                       function (User $model, RepositoryContract $repository): User {
                                                            // Check for the new level of transaction.
                                                            expect(DB::transactionLevel())->toBe(2);
 
