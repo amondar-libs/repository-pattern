@@ -72,7 +72,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     public function __get(mixed $key)
     {
         if ( $key === 'quietly' ) {
-            return $this->makeQuetlyProxy();
+            return $this->makeQuietlyProxy();
         }
 
         if ( $key === 'transaction' ) {
@@ -215,7 +215,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @return HigherOrderQuietlyProxy<TModel, TData>
      */
-    protected function makeQuetlyProxy() : HigherOrderQuietlyProxy
+    protected function makeQuietlyProxy() : HigherOrderQuietlyProxy
     {
         return new HigherOrderQuietlyProxy($this);
     }
