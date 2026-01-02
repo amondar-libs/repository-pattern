@@ -4,15 +4,15 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Concerns;
 
-use Amondar\ClassAttributes\Libraries\Attributes;
+use Amondar\ClassAttributes\Parse;
 use Amondar\RepositoryPattern\Attributes\VersionField;
 use Amondar\RepositoryPattern\Contracts\Lockable;
+use Amondar\RepositoryPattern\Contracts\WithAttributesCache;
 use Amondar\RepositoryPattern\Exceptions\OptimisticLockException;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Override;
-use ReflectionException;
 
 /**
  * Trait HasOptimisticLock
@@ -86,6 +86,25 @@ trait HasOptimisticLock
     }
 
     /**
+     * Retrieves the field name used for optimistic locking in the current model.
+     *
+     * @return string|null The name of the optimistic lock field if defined, or null if not available.
+     */
+    public static function getOptimisticLockFieldName(): ?string
+    {
+        $cacheStore = is_subclass_of(static::class, WithAttributesCache::class) ?
+            static::getAttributesCache() : null;
+
+        $parse = Parse::attribute(VersionField::class)
+            ->on(static::class)
+            ->ascend()
+            ->withCache($cacheStore)
+            ->get();
+
+        return $parse?->attributes[0]->field ?? null;
+    }
+
+    /**
      * Save the model instance without applying locking mechanisms.
      *
      * @param  array  $options  Array of options to be passed while saving the model.
@@ -126,15 +145,12 @@ trait HasOptimisticLock
      * Boots the optimistic lock functionality for a model utilizing this trait.
      * Typically used to handle scenarios where concurrent updates to the same record might occur, ensuring data
      * integrity.
-     *
-     * @throws ReflectionException
      */
     protected static function bootHasOptimisticLock(): void
     {
         // Load the version field attribute from the class attributes' library.
         if (empty(static::$versionField)) {
-            static::$versionField = (new Attributes(static::class))
-                ->loadFromClass(VersionField::class, ascend: true)?->field ?? 'version';
+            static::$versionField = static::getOptimisticLockFieldName() ?? 'version';
         }
 
         // Subscribe to "creating" event to set the version field value.

@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Tests\resources;
+namespace Tests\_fixtures;
 
 use Illuminate\Support\Optional;
 use Spatie\LaravelData\Data;

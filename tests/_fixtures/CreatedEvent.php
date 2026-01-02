@@ -2,24 +2,24 @@
 
 declare(strict_types = 1);
 
-namespace Tests\resources;
+namespace Tests\_fixtures;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Class CreatingEvent
+ * Class CreatedEvent
  *
  * @author Amondar-SO
  */
-readonly class UpdatingEvent
+readonly class CreatedEvent
 {
     use Dispatchable, SerializesModels;
 
     /**
      * CreatingEvent constructor.
      */
-    public function __construct(public User $model, public array $data)
+    public function __construct(public User $model, public array $data, public array $relations)
     {
         //
     }

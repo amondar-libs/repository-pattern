@@ -2,9 +2,8 @@
 
 declare(strict_types = 1);
 
-namespace Tests\resources;
+namespace Tests\_fixtures;
 
-use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -13,14 +12,14 @@ use Illuminate\Queue\SerializesModels;
  *
  * @author Amondar-SO
  */
-readonly class CreatingEvent implements ShouldDispatchAfterCommit
+readonly class UpdatingEvent
 {
     use Dispatchable, SerializesModels;
 
     /**
      * CreatingEvent constructor.
      */
-    public function __construct(public string $email)
+    public function __construct(public User $model, public array $data)
     {
         //
     }

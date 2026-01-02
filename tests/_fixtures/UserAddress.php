@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Tests\resources;
+namespace Tests\_fixtures;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

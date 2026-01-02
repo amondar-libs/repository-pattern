@@ -31,7 +31,7 @@ abstract class TestCase extends CoreTestCase
 
     protected function defineDatabaseMigrations()
     {
-        $this->loadMigrationsFrom(__DIR__ . '/resources/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/_fixtures/migrations');
     }
 
     #[NoReturn]

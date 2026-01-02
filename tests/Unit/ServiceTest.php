@@ -7,12 +7,12 @@ namespace Tests\Unit;
 use Exception;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Event;
-use Tests\resources\CreatedEvent;
-use Tests\resources\CreatingEvent;
-use Tests\resources\UpdatedEvent;
-use Tests\resources\UpdatingEvent;
-use Tests\resources\UserData;
-use Tests\resources\UserRepository;
+use Tests\_fixtures\CreatedEvent;
+use Tests\_fixtures\CreatingEvent;
+use Tests\_fixtures\UpdatedEvent;
+use Tests\_fixtures\UpdatingEvent;
+use Tests\_fixtures\UserData;
+use Tests\_fixtures\UserRepository;
 
 it('can create user', function () {
     Event::fake([
@@ -20,7 +20,7 @@ it('can create user', function () {
         CreatedEvent::class,
     ]);
 
-    $model = App::make(\Tests\resources\UserService::class)->create(
+    $model = App::make(\Tests\_fixtures\UserService::class)->create(
         UserData::from($data = [
             'name'      => 'Amondar-SO',
             'email'     => 'my@email.com',
@@ -74,7 +74,7 @@ it('can update user', function () {
         'is_admin'  => false,
     ]));
 
-    $model = App::make(\Tests\resources\UserService::class)->update(
+    $model = App::make(\Tests\_fixtures\UserService::class)->update(
         $model,
         UserData::factory()->from($data = [
             'name'      => 'Amondar-SO-1',
@@ -120,7 +120,7 @@ it('should fire exception and rollback transaction', function () {
         CreatingEvent::class,
     ]);
 
-    expect(fn() => App::make(\Tests\resources\WrongUserService::class)->transaction->onLevel(1)->create(
+    expect(fn() => App::make(\Tests\_fixtures\WrongUserService::class)->transaction->onLevel(1)->create(
         UserData::from([
             'name'      => 'Amondar-SO',
             'email'     => 'my@email.com',

@@ -3,8 +3,8 @@
 declare(strict_types = 1);
 
 use Amondar\RepositoryPattern\Exceptions\OptimisticLockException;
-use Tests\resources\VersionedPost;
-use Tests\resources\VersionedPostRepository;
+use Tests\_fixtures\VersionedPost;
+use Tests\_fixtures\VersionedPostRepository;
 
 it('should apply version field during creation', function () {
     $model = VersionedPost::create([
