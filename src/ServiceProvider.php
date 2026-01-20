@@ -27,7 +27,7 @@ final class ServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         Blueprint::macro('versionable', function (string $column = 'version') {
-            return $this->integer($column);
+            return $this->unsignedBigInteger($column);
         });
     }
 
