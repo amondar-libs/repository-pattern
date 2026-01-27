@@ -12,7 +12,6 @@ use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 use Spatie\LaravelData\Data;
 use Spatie\StructureDiscoverer\Cache\DiscoverCacheDriver;
@@ -115,9 +114,9 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     /**
      * Creates and returns a new instance of the model class.
      *
-     * @return TModel|Model An instance of the specified model class.
+     * @return TModel An instance of the specified model class.
      */
-    final public function makeModel(): Model
+    final public function makeModel()
     {
         return new ($this->model())();
     }
@@ -137,9 +136,9 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @param  array<string, mixed>|TData  $data  Input data to populate the model. Can be an array or an instance of
      *                                            the Data class.
-     * @return TModel|Model Return a created model instance.
+     * @return TModel Return a created model instance.
      */
-    final public function create(array|Data $data): Model
+    final public function create(array|Data $data)
     {
         return tap($this->makeModel()->fill(
             $this->normalizeData($data)
@@ -149,12 +148,12 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     /**
      * Updates the given model with the provided data.
      *
-     * @param  Model  $model  The model instance to update.
+     * @param  TModel  $model  The model instance to update.
      * @param  array<string, mixed>|TData  $data  The data to update the model with. Can be an associative array
      *                                            or an instance of the Data class which will be converted to an array.
-     * @return TModel|Model The updated model instance.
+     * @return TModel The updated model instance.
      */
-    final public function update(Model $model, array|Data $data): Model
+    final public function update($model, array|Data $data)
     {
         return tap($model)->update(
             $this->normalizeData($data)
@@ -183,10 +182,10 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     /**
      * Persists the supplied model and all of its relationships to the database.
      *
-     * @param  Model|TModel  $model  The model instance to be saved along with its relationships.
+     * @param  TModel  $model  The model instance to be saved along with its relationships.
      * @return bool True if the operation was successful, false otherwise.
      */
-    final public function push(Model $model): bool
+    final public function push($model): bool
     {
         return $model->push();
     }

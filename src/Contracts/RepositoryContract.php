@@ -41,7 +41,7 @@ interface RepositoryContract
      *
      * @return TModel An instance of the specified model class.
      */
-    public function makeModel(): Model;
+    public function makeModel();
 
     /**
      * Prepares and returns a new query builder instance from the model.
@@ -55,19 +55,19 @@ interface RepositoryContract
      *
      * @param  array<string, mixed>|TData  $data  Input data to populate the model. Can be an array or an instance of
      *                                            the Data class.
-     * @return TModel|Model Return a created model instance.
+     * @return TModel Return a created model instance.
      */
-    public function create(array|Data $data): Model;
+    public function create(array|Data $data);
 
     /**
      * Updates the given model with the provided data.
      *
-     * @param  Model  $model  The model instance to update.
+     * @param  TModel  $model  The model instance to update.
      * @param  array<string, mixed>|TData  $data  The data to update the model with. Can be an associative array
      *                                            or an instance of the Data class which will be converted to an array.
-     * @return TModel|Model The updated model instance.
+     * @return TModel The updated model instance.
      */
-    public function update(Model $model, array|Data $data): Model;
+    public function update($model, array|Data $data);
 
     /**
      * Performs an upsert operation on the database, inserting or updating records based on unique constraints.
@@ -84,10 +84,10 @@ interface RepositoryContract
     /**
      * Persists the supplied model and all of its relationships to the database.
      *
-     * @param  Model|TModel  $model  The model instance to be saved along with its relationships.
+     * @param  TModel  $model  The model instance to be saved along with its relationships.
      * @return bool True if the operation was successful, false otherwise.
      */
-    public function push(Model $model): bool;
+    public function push($model): bool;
 
     /**
      * Processes and normalizes the given data to a consistent format.
