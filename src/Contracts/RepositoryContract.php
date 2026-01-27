@@ -46,10 +46,9 @@ interface RepositoryContract
     /**
      * Prepares and returns a new query builder instance from the model.
      *
-     * @return Builder<TModel>|TModel Return a query builder instance or model instance (to solve IDE understanding of
-     *                                scopes).
+     * @return Builder<TModel>
      */
-    public function query(): Builder;
+    public function query();
 
     /**
      * Creates and saves a new model instance with the provided data.

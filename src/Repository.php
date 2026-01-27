@@ -125,10 +125,9 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     /**
      * Prepares and returns a new query builder instance from the model.
      *
-     * @return Builder<TModel>|TModel Return a query builder instance or model instance (to solve IDE understanding of
-     *                                scopes).
+     * @return Builder<TModel>
      */
-    final public function query(): Builder
+    final public function query()
     {
         return $this->makeModel()->query();
     }
