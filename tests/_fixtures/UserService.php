@@ -4,10 +4,10 @@ declare(strict_types = 1);
 
 namespace Tests\_fixtures;
 
+use Amondar\RepositoryPattern\Concerns\HasCreateCommand;
+use Amondar\RepositoryPattern\Concerns\HasUpdateCommand;
 use Amondar\RepositoryPattern\Contracts\CreationCommandContract;
 use Amondar\RepositoryPattern\Contracts\UpdateCommandContract;
-use Amondar\RepositoryPattern\Extensions\HasCreateCommand;
-use Amondar\RepositoryPattern\Extensions\HasUpdateCommand;
 use Amondar\RepositoryPattern\Service;
 
 /**

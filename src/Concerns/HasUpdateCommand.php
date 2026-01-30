@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Amondar\RepositoryPattern\Extensions;
+namespace Amondar\RepositoryPattern\Concerns;
 
 use Amondar\RepositoryPattern\Repository;
 use Illuminate\Database\Eloquent\Model;

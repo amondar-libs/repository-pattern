@@ -4,8 +4,8 @@ declare(strict_types = 1);
 
 namespace Tests\_fixtures;
 
+use Amondar\RepositoryPattern\Concerns\HasCreateCommand;
 use Amondar\RepositoryPattern\Contracts\CreationCommandContract;
-use Amondar\RepositoryPattern\Extensions\HasCreateCommand;
 use Amondar\RepositoryPattern\Service;
 use Illuminate\Support\Facades\DB;
 

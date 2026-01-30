@@ -312,10 +312,7 @@ with handy create/update traits.
 Also, you can use traits to add target methods into commands in the CQRS pattern.
 
 ```php
-use Amondar\RepositoryPattern\Service;
-use Amondar\RepositoryPattern\Extensions\HasCreateCommand;
-use Amondar\RepositoryPattern\Extensions\HasUpdateCommand;
-use Illuminate\Database\Eloquent\Model;
+use Amondar\RepositoryPattern\Concerns\HasCreateCommand;use Amondar\RepositoryPattern\Concerns\HasUpdateCommand;use Amondar\RepositoryPattern\Service;
 
 /**
  * @extends Service<User, UserData, UserRepository>
