@@ -8,6 +8,7 @@ use Amondar\RepositoryPattern\Concerns\HasCreateCommand;
 use Amondar\RepositoryPattern\Contracts\CreationCommandContract;
 use Amondar\RepositoryPattern\Service;
 use Illuminate\Support\Facades\DB;
+use Spatie\LaravelData\Data;
 
 /**
  * Class WrongUserService
@@ -36,12 +37,12 @@ class WrongUserService extends Service implements CreationCommandContract
         return $this->userRepository;
     }
 
-    protected function creatingHook(array &$data): void
+    protected function creatingHook(array|Data &$data): void
     {
-        CreatingEvent::dispatch($data[ 'email' ]);
+        CreatingEvent::dispatch($data->email);
     }
 
-    protected function createdHook(User $model, array $data, array $relations): void
+    protected function createdHook(User $model, array|Data $data, array $relations): void
     {
         DB::table('outbox_not_exists')->insert([
             $data,

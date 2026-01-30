@@ -79,7 +79,6 @@ it('can update user', function () {
         UserData::factory()->from($data = [
             'name'      => 'Amondar-SO-1',
             'email'     => 'my+1@email.com',
-            'password'  => null,
             'is_active' => false,
             'is_admin'  => true,
         ])

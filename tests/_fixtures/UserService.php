@@ -9,6 +9,7 @@ use Amondar\RepositoryPattern\Concerns\HasUpdateCommand;
 use Amondar\RepositoryPattern\Contracts\CreationCommandContract;
 use Amondar\RepositoryPattern\Contracts\UpdateCommandContract;
 use Amondar\RepositoryPattern\Service;
+use Spatie\LaravelData\Data;
 
 /**
  * Class UserService
@@ -37,7 +38,7 @@ class UserService extends Service implements CreationCommandContract, UpdateComm
      * @param  User  $model
      * @return array[]
      */
-    public function storeModelRelations($model, array &$data): array
+    public function storeModelRelations($model, array|Data &$data): array
     {
         return [
             'addresses' => [ 'attached' => [ 1, 2, 3 ], 'detached' => [ 4, 5, 6 ] ],
@@ -49,29 +50,25 @@ class UserService extends Service implements CreationCommandContract, UpdateComm
         return $this->userRepository;
     }
 
-    protected function creatingHook(array &$data): void
+    protected function creatingHook(array|Data &$data): void
     {
-        $data[ 'email' ] = 'my+1@email.com';
+        $data->email = 'my+1@email.com';
 
-        CreatingEvent::dispatch($data[ 'email' ]);
+        CreatingEvent::dispatch($data->email);
     }
 
-    protected function createdHook(User $model, array $data, array $relations): void
+    protected function createdHook(User $model, array|Data $data, array $relations): void
     {
-        CreatedEvent::dispatch($model, $data, $relations);
+        CreatedEvent::dispatch($model, $data->toArray(), $relations);
     }
 
-    protected function updatingHook(User $model, array &$data): void
+    protected function updatingHook(User $model, array|Data &$data): void
     {
-        if (empty($data[ 'password' ])) {
-            unset($data[ 'password' ]);
-        }
-
-        UpdatingEvent::dispatch($model, $data);
+        UpdatingEvent::dispatch($model, $data->toArray());
     }
 
-    protected function updatedHook(User $model, array $data, array $relations): void
+    protected function updatedHook(User $model, array|Data $data, array $relations): void
     {
-        UpdatedEvent::dispatch($model, $data, $relations);
+        UpdatedEvent::dispatch($model, $data->toArray(), $relations);
     }
 }

@@ -6,6 +6,7 @@ namespace Amondar\RepositoryPattern;
 
 use Amondar\RepositoryPattern\Proxies\HigherOrderServiceTransactionProxy;
 use RuntimeException;
+use Spatie\LaravelData\Data;
 
 /**
  * Class Service
@@ -46,10 +47,10 @@ abstract class Service
      * Stores model relations.
      *
      * @param  TModel  $model
-     * @param  array  $data  The data array to be updated with model relation information, passed by reference.
+     * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
      * @return array Returns the array with changes applied to model relations.
      */
-    protected function storeModelRelations($model, array &$data): array
+    protected function storeModelRelations($model, array|Data &$data): array
     {
         return [];
     }

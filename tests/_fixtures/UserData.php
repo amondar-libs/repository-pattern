@@ -18,7 +18,7 @@ class UserData extends Data
 
     public string $email;
 
-    public string|Optional|null $password;
+    public string|Optional $password;
 
     public bool $is_active;
 
