@@ -19,8 +19,8 @@ use Spatie\StructureDiscoverer\Cache\DiscoverCacheDriver;
 /**
  * Class Repository
  *
- * @template TModel
- * @template TData
+ * @template TModel of \Illuminate\Database\Eloquent\Model
+ * @template TData of \Spatie\LaravelData\Data
  *
  * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
  * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
@@ -140,9 +140,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     final public function create(array|Data $data)
     {
-        return tap($this->makeModel()->fill(
-            $this->normalizeData($data)
-        ))->save();
+        return tap($this->fillTheModel($this->makeModel(), $data))->save();
     }
 
     /**
@@ -155,9 +153,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     final public function update($model, array|Data $data)
     {
-        return tap($model)->update(
-            $this->normalizeData($data)
-        );
+        return tap($this->fillTheModel($model, $data))->save();
     }
 
     /**
@@ -204,6 +200,17 @@ abstract readonly class Repository implements Contracts\RepositoryContract
 
         return $data;
 
+    }
+
+    /**
+     * @param  TModel  $model
+     * @return TModel
+     */
+    protected function fillTheModel($model, array|Data $data)
+    {
+        $normalized = $this->normalizeData($data);
+
+        return $data instanceof Data ? $model->forceFill($normalized) : $model->fill($normalized);
     }
 
     /**
