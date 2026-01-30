@@ -38,11 +38,9 @@ class UserService extends Service implements CreationCommandContract, UpdateComm
      * @param  User  $model
      * @return array[]
      */
-    public function storeModelRelations($model, array|Data &$data): array
+    public function storeModelRelations($model, array|Data &$data): void
     {
-        return [
-            'addresses' => [ 'attached' => [ 1, 2, 3 ], 'detached' => [ 4, 5, 6 ] ],
-        ];
+        //
     }
 
     protected function repository(): UserRepository
@@ -57,9 +55,9 @@ class UserService extends Service implements CreationCommandContract, UpdateComm
         CreatingEvent::dispatch($data->email);
     }
 
-    protected function createdHook(User $model, array|Data $data, array $relations): void
+    protected function createdHook(User $model, array|Data $data): void
     {
-        CreatedEvent::dispatch($model, $data->toArray(), $relations);
+        CreatedEvent::dispatch($model, $data->toArray());
     }
 
     protected function updatingHook(User $model, array|Data &$data): void
@@ -67,8 +65,8 @@ class UserService extends Service implements CreationCommandContract, UpdateComm
         UpdatingEvent::dispatch($model, $data->toArray());
     }
 
-    protected function updatedHook(User $model, array|Data $data, array $relations): void
+    protected function updatedHook(User $model, array|Data $data): void
     {
-        UpdatedEvent::dispatch($model, $data->toArray(), $relations);
+        UpdatedEvent::dispatch($model, $data->toArray());
     }
 }

@@ -50,10 +50,6 @@ it('can create user', function () {
             ->toMatchArray([
                 ...$data,
                 'email' => 'my+1@email.com',
-            ])
-            ->and($event->relations)
-            ->toMatchArray([
-                'addresses' => [ 'attached' => [ 1, 2, 3 ], 'detached' => [ 4, 5, 6 ] ],
             ]);
 
         return true;
@@ -104,11 +100,7 @@ it('can update user', function () {
         expect($event->model->getKey())
             ->toBe($model->getKey())
             ->and($event->data)
-            ->toMatchArray($data)
-            ->and($event->relations)
-            ->toMatchArray([
-                'addresses' => [ 'attached' => [ 1, 2, 3 ], 'detached' => [ 4, 5, 6 ] ],
-            ]);
+            ->toMatchArray($data);
 
         return true;
     });

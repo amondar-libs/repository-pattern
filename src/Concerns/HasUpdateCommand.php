@@ -38,9 +38,8 @@ trait HasUpdateCommand
      *
      * @param  Model|TModel  $model
      * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
-     * @return array Returns the array with changes applied to model relations.
      */
-    abstract protected function storeModelRelations(Model $model, array|Data &$data): array;
+    abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
 
     /**
      * Updates an existing model with the provided data, performing normalization,
@@ -59,9 +58,9 @@ trait HasUpdateCommand
         // 2) Create the model as a record in DB.
         $model = $this->repository()->update($model, $data);
 
-        $relations = $this->storeModelRelations($model, $data);
+        $this->storeModelRelations($model, $data);
 
-        $this->updatedHook($model, $data, $relations);
+        $this->updatedHook($model, $data);
 
         return $model->load($this->shouldLoadRelationsAfterChangesApplied());
     }
@@ -84,9 +83,8 @@ trait HasUpdateCommand
      *
      * @param  Model  $model  The model instance that has been updated.
      * @param  array<string, mixed>|TData  $data  The updated data associated with the model.
-     * @param  array  $relations  The relationships associated with the model that were updated.
      */
-    protected function updatedHook(Model $model, array|Data $data, array $relations): void
+    protected function updatedHook(Model $model, array|Data $data): void
     {
         // Apply some actions right after model FULLY updated with all relationships.
     }

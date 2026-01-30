@@ -39,9 +39,8 @@ trait HasCreateCommand
      *
      * @param  Model|TModel  $model
      * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
-     * @return array Returns the array with changes applied to model relations.
      */
-    abstract protected function storeModelRelations(Model $model, array|Data &$data): array;
+    abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
 
     /**
      * Creates a new entity or record based on the provided data.
@@ -58,9 +57,9 @@ trait HasCreateCommand
         $model = $this->repository()->create($data);
 
         if ($model->exists) {
-            $relations = $this->storeModelRelations($model, $data);
+            $this->storeModelRelations($model, $data);
 
-            $this->createdHook($model, $data, $relations);
+            $this->createdHook($model, $data);
 
             return $model->load($this->shouldLoadRelationsAfterChangesApplied());
         }
@@ -85,10 +84,8 @@ trait HasCreateCommand
      *
      * @param  TModel|Model  $model
      * @param  array<string, mixed>|TData  $data  The primary data of the model that was saved.
-     * @param  array  $relations  The data of relationships that was changed in the model. Can be useful for some
-     *                            events.
      */
-    protected function createdHook(Model $model, array|Data $data, array $relations): void
+    protected function createdHook(Model $model, array|Data $data): void
     {
         // Apply some actions right after model FULLY created with all relationships.
     }

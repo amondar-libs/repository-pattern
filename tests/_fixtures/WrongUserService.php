@@ -42,7 +42,7 @@ class WrongUserService extends Service implements CreationCommandContract
         CreatingEvent::dispatch($data->email);
     }
 
-    protected function createdHook(User $model, array|Data $data, array $relations): void
+    protected function createdHook(User $model, array|Data $data): void
     {
         DB::table('outbox_not_exists')->insert([
             $data,

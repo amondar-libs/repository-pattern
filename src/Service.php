@@ -48,11 +48,10 @@ abstract class Service
      *
      * @param  TModel  $model
      * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
-     * @return array Returns the array with changes applied to model relations.
      */
-    protected function storeModelRelations($model, array|Data &$data): array
+    protected function storeModelRelations($model, array|Data &$data): void
     {
-        return [];
+        //
     }
 
     /**

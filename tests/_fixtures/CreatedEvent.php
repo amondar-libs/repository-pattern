@@ -19,7 +19,7 @@ readonly class CreatedEvent
     /**
      * CreatingEvent constructor.
      */
-    public function __construct(public User $model, public array $data, public array $relations)
+    public function __construct(public User $model, public array $data)
     {
         //
     }
