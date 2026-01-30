@@ -199,13 +199,14 @@ abstract readonly class Repository implements Contracts\RepositoryContract
 
     /**
      * @param  TModel  $model
+     * @param  array<string, mixed>|TData  $data
      * @return TModel
      */
     protected function fillTheModel($model, array|Data $data)
     {
         $normalized = $this->normalizeData($data);
 
-        return $this->isDataClass($data) ? $model->forceFill($normalized) : $model->fill($normalized);
+        return $model->fill($normalized);
     }
 
     /**
