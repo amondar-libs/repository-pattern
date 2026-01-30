@@ -40,7 +40,7 @@ abstract class Service
      *
      * @return Repository<TModel, TData>|TRepository
      */
-    abstract protected function repository(): Repository;
+    abstract protected function repository();
 
     /**
      * Stores model relations.

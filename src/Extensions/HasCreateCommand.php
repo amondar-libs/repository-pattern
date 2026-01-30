@@ -25,7 +25,7 @@ trait HasCreateCommand
      *
      * @return Repository<TModel, TData>|TRepository
      */
-    abstract protected function repository(): Repository;
+    abstract protected function repository();
 
     /**
      * Determines which relations should be loaded after changes have been applied.
