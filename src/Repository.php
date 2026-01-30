@@ -20,7 +20,7 @@ use Spatie\StructureDiscoverer\Cache\DiscoverCacheDriver;
  * Class Repository
  *
  * @template TModel of \Illuminate\Database\Eloquent\Model
- * @template TData of \Spatie\LaravelData\Data
+ * @template TData
  *
  * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
  * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
@@ -194,12 +194,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     final public function normalizeData(array|Data|null $data): ?array
     {
-        if ($data instanceof Data) {
-            return $data->toArray();
-        }
-
-        return $data;
-
+        return $this->isDataClass($data) ? $data->toArray() : $data;
     }
 
     /**
@@ -210,7 +205,23 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     {
         $normalized = $this->normalizeData($data);
 
-        return $data instanceof Data ? $model->forceFill($normalized) : $model->fill($normalized);
+        return $this->isDataClass($data) ? $model->forceFill($normalized) : $model->fill($normalized);
+    }
+
+    /**
+     * Determines if the given data is a data class.
+     *
+     * A data class is identified as an instance of the Data class or a class that exists
+     * and has a `toArray` method.
+     *
+     * @param  array<string, mixed>|null|TData  $data  The data to analyze.
+     */
+    protected function isDataClass($data): bool
+    {
+        return $data !== null && is_object($data) && (
+            $data instanceof Data
+            || method_exists($data, 'toArray')
+        );
     }
 
     /**
