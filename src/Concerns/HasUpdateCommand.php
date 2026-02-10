@@ -6,6 +6,7 @@ namespace Amondar\RepositoryPattern\Concerns;
 
 use Amondar\RepositoryPattern\Repository;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Spatie\LaravelData\Data;
 
 /**
@@ -20,6 +21,28 @@ use Spatie\LaravelData\Data;
 trait HasUpdateCommand
 {
     /**
+     * Defines a method that must be implemented to return a repository instance.
+     *
+     * @return Repository<TModel, TData>|TRepository
+     */
+    abstract protected function repository();
+
+    /**
+     * Stores model relations.
+     *
+     * @param  Model|TModel  $model
+     * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
+     */
+    abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
+
+    /**
+     * Determines which relations should be loaded after changes have been applied.
+     *
+     * @return array An array of relation names that need to be loaded.
+     */
+    abstract protected function shouldLoadRelationsAfterChangesApplied(): array;
+
+    /**
      * Updates an existing model with the provided data, performing normalization,
      * triggers for hooks, and handling model relationships.
      *
@@ -32,7 +55,7 @@ trait HasUpdateCommand
     {
         // 0) Validate for required locking.
         if (is_int($model) || is_string($model)) {
-            return $this->transaction->pessimisticUpdate($model, $data);
+            return $this->pessimisticUpdate($model, $data);
         }
 
         // 1) Run any necessary operations before saving.
@@ -56,17 +79,12 @@ trait HasUpdateCommand
      */
     protected function pessimisticUpdate(string|int $modelId, array|Data $data)
     {
-        $lockedModel = $this->repository()->transaction->getLock($modelId);
+        return DB::transaction(function () use ($modelId, $data) {
+            $lockedModel = $this->repository()->transaction->getLock($modelId);
 
-        return $this->update($lockedModel, $data);
+            return $this->update($lockedModel, $data);
+        });
     }
-
-    /**
-     * Defines a method that must be implemented to return a repository instance.
-     *
-     * @return Repository<TModel, TData>|TRepository
-     */
-    abstract protected function repository();
 
     /**
      * Allows modifications or actions to be performed on data before updating a model.
@@ -81,14 +99,6 @@ trait HasUpdateCommand
     }
 
     /**
-     * Stores model relations.
-     *
-     * @param  Model|TModel  $model
-     * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
-     */
-    abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
-
-    /**
      * Performs actions or modifications immediately after a model has been fully updated, including all its
      * relationships.
      *
@@ -99,11 +109,4 @@ trait HasUpdateCommand
     {
         // Apply some actions right after model FULLY updated with all relationships.
     }
-
-    /**
-     * Determines which relations should be loaded after changes have been applied.
-     *
-     * @return array An array of relation names that need to be loaded.
-     */
-    abstract protected function shouldLoadRelationsAfterChangesApplied(): array;
 }
