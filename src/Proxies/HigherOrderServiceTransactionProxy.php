@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Proxies;
 
@@ -23,7 +23,7 @@ readonly class HigherOrderServiceTransactionProxy
     /**
      * HigherOrderDBTransactionProxy constructor.
      *
-     * @param Service<TModel, TData> $service
+     * @param  Service<TModel, TData>  $service
      */
     public function __construct(private Service $service, private int $transactionLevel = 0)
     {
@@ -31,22 +31,8 @@ readonly class HigherOrderServiceTransactionProxy
     }
 
     /**
-     * Sets the transaction level and returns a new instance of the class.
-     *
-     * @param int $level The transaction level to set.
-     *
-     * @return static A new instance of the class with the specified transaction level.
-     */
-    public function onLevel(int $level) : static
-    {
-        return new static($this->service, $level);
-    }
-
-    /**
      * Proxy a method call onto the collection items.
      *
-     * @param string $method
-     * @param array  $parameters
      *
      * @return mixed
      *
@@ -54,11 +40,21 @@ readonly class HigherOrderServiceTransactionProxy
      */
     public function __call(string $method, array $parameters)
     {
-        if ( DB::transactionLevel() === $this->transactionLevel ) {
+        if (DB::transactionLevel() === $this->transactionLevel) {
             return DB::transaction(fn() => $this->service->{$method}(...$parameters));
         }
 
         return $this->service->{$method}(...$parameters);
     }
 
+    /**
+     * Sets the transaction level and returns a new instance of the class.
+     *
+     * @param  int  $level  The transaction level to set.
+     * @return static A new instance of the class with the specified transaction level.
+     */
+    public function onLevel(int $level): static
+    {
+        return new static($this->service, $level);
+    }
 }

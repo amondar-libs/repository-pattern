@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Amondar\RepositoryPattern\Enums;
 
 enum LockType: string
 {
-    case FOR_UPDATE = 'lockForUpdate';
-    case SHARED = 'sharedLock';
+    case forUpdate = 'lockForUpdate';
+    case shared = 'sharedLock';
 }

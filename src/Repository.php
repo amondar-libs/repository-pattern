@@ -102,13 +102,13 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     }
 
     /**
-     * Retrieves the class name of the model associated with the repository.
+     * Prepares and returns a new query builder instance from the model.
      *
-     * @return class-string<TModel> The fully qualified class name of the model.
+     * @return Builder<TModel>
      */
-    final public function model(): string
+    final public function query()
     {
-        return $this->modelClass;
+        return $this->makeModel()->query();
     }
 
     /**
@@ -122,13 +122,13 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     }
 
     /**
-     * Prepares and returns a new query builder instance from the model.
+     * Retrieves the class name of the model associated with the repository.
      *
-     * @return Builder<TModel>
+     * @return class-string<TModel> The fully qualified class name of the model.
      */
-    final public function query()
+    final public function model(): string
     {
-        return $this->makeModel()->query();
+        return $this->modelClass;
     }
 
     /**
@@ -141,6 +141,17 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     final public function create(array|Data $data)
     {
         return tap($this->fillTheModel($this->makeModel(), $data))->save();
+    }
+
+    /**
+     * Processes and normalizes the given data to a consistent format.
+     *
+     * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
+     * @return array|null The normalized data.
+     */
+    final public function normalizeData(array|Data|null $data): ?array
+    {
+        return $this->isDataClass($data) ? $data->toArray() : $data;
     }
 
     /**
@@ -187,45 +198,6 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     }
 
     /**
-     * Processes and normalizes the given data to a consistent format.
-     *
-     * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
-     * @return array|null The normalized data.
-     */
-    final public function normalizeData(array|Data|null $data): ?array
-    {
-        return $this->isDataClass($data) ? $data->toArray() : $data;
-    }
-
-    /**
-     * @param  TModel  $model
-     * @param  array<string, mixed>|TData  $data
-     * @return TModel
-     */
-    protected function fillTheModel($model, array|Data $data)
-    {
-        $normalized = $this->normalizeData($data);
-
-        return $model->fill($normalized);
-    }
-
-    /**
-     * Determines if the given data is a data class.
-     *
-     * A data class is identified as an instance of the Data class or a class that exists
-     * and has a `toArray` method.
-     *
-     * @param  array<string, mixed>|null|TData  $data  The data to analyze.
-     */
-    protected function isDataClass($data): bool
-    {
-        return $data !== null && is_object($data) && (
-            $data instanceof Data
-            || method_exists($data, 'toArray')
-        );
-    }
-
-    /**
      * Retrieves the cached attributes driver if available.
      */
     protected function getAttributesCache(): ?DiscoverCacheDriver
@@ -261,5 +233,33 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     protected function makeUnlockedProxy(): HigherOrderUnlockedProxy
     {
         return new HigherOrderUnlockedProxy($this);
+    }
+
+    /**
+     * @param  TModel  $model
+     * @param  array<string, mixed>|TData  $data
+     * @return TModel
+     */
+    protected function fillTheModel($model, array|Data $data)
+    {
+        $normalized = $this->normalizeData($data);
+
+        return $model->fill($normalized);
+    }
+
+    /**
+     * Determines if the given data is a data class.
+     *
+     * A data class is identified as an instance of the Data class or a class that exists
+     * and has a `toArray` method.
+     *
+     * @param  array<string, mixed>|null|TData  $data  The data to analyze.
+     */
+    protected function isDataClass($data): bool
+    {
+        return $data !== null && is_object($data) && (
+            $data instanceof Data
+            || method_exists($data, 'toArray')
+        );
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Proxies;
 
@@ -28,26 +28,20 @@ readonly class HigherOrderRepositoryTransactionProxy
     /**
      * HigherOrderDBTransactionProxy constructor.
      *
-     * @param Repository<TModel, TData>                 $repository
-     * @param bool                                      $useTrashed
-     * @param \Amondar\RepositoryPattern\Enums\LockType $lockType
-     * @param int                                       $transactionLevel
+     * @param  Repository<TModel, TData>  $repository
      */
     public function __construct(
         private Repository $repository,
         private bool $useTrashed = false,
-        private LockType $lockType = LockType::FOR_UPDATE,
+        private LockType $lockType = LockType::forUpdate,
         private int $transactionLevel = 0
-    )
-    {
+    ) {
         //
     }
 
     /**
      * Proxy a method call onto the collection items.
      *
-     * @param string $method
-     * @param array  $parameters
      *
      * @return mixed
      *
@@ -61,19 +55,18 @@ readonly class HigherOrderRepositoryTransactionProxy
     /**
      * Magic __get method.
      *
-     * @param string $name The name of the property being accessed.
-     *
+     * @param  string  $name  The name of the property being accessed.
      * @return mixed Returns the value of the property, or executes a transaction for specific properties.
      *
      * @throws Throwable
      */
     public function __get(string $name)
     {
-        if ( $name === 'quietly' ) {
+        if ($name === 'quietly') {
             return DB::transaction(fn() => $this->repository->$name);
         }
 
-        if ( $name === 'withTrashed' ) {
+        if ($name === 'withTrashed') {
             return new static($this->repository, true);
         }
 
@@ -83,11 +76,10 @@ readonly class HigherOrderRepositoryTransactionProxy
     /**
      * Sets the transaction level and returns a new instance of the class.
      *
-     * @param int $level The transaction level to set.
-     *
+     * @param  int  $level  The transaction level to set.
      * @return static A new instance of the class with the specified transaction level.
      */
-    public function onLevel(int $level) : static
+    public function onLevel(int $level): static
     {
         return new static($this->repository, $this->useTrashed, $this->lockType, $level);
     }
@@ -97,9 +89,9 @@ readonly class HigherOrderRepositoryTransactionProxy
      *
      * @return static A new instance configured with LockType::SHARED.
      */
-    public function asShared() : static
+    public function asShared(): static
     {
-        return new static($this->repository, $this->useTrashed, LockType::SHARED, $this->transactionLevel);
+        return new static($this->repository, $this->useTrashed, LockType::shared, $this->transactionLevel);
     }
 
     /**
@@ -107,17 +99,17 @@ readonly class HigherOrderRepositoryTransactionProxy
      *
      * @template TResult
      *
-     * @param string|int                                          $key           The primary key of the record to lock
-     *                                                                           for update.
-     * @param Closure(TModel, Repository<TModel, TData>): TResult $callback      A callback function that processes the
-     *                                                                           locked record and repository.
-     *
+     * @param  string|int  $key  The primary key of the record to lock
+     *                           for update.
+     * @param  Closure(TModel, Repository<TModel, TData>): TResult  $callback  A callback function that processes the
+     *                                                                         locked record and repository.
      * @return TResult
-     * @throws \Throwable
+     *
+     * @throws Throwable
      */
     public function forUpdate(string|int $key, Closure $callback)
     {
-        if ( DB::transactionLevel() === $this->transactionLevel ) {
+        if (DB::transactionLevel() === $this->transactionLevel) {
             return DB::transaction(function () use ($key, $callback) {
                 return $callback($this->getLock($key), $this->repository);
             });
@@ -129,8 +121,7 @@ readonly class HigherOrderRepositoryTransactionProxy
     /**
      * Executes the provided callback within a "for update" lock on the specified model.
      *
-     * @param string|int $key The key identifying the model to lock.
-     *
+     * @param  string|int  $key  The key identifying the model to lock.
      * @return TModel
      */
     public function getLock(string|int $key)
@@ -150,9 +141,8 @@ readonly class HigherOrderRepositoryTransactionProxy
      *
      * @return bool True if trashed records should be used, otherwise false.
      */
-    public function shouldUseTrashed() : bool
+    public function shouldUseTrashed(): bool
     {
         return $this->useTrashed;
     }
-
 }

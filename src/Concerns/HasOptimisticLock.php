@@ -39,50 +39,27 @@ trait HasOptimisticLock
     protected static bool $locked = true;
 
     /**
-     * Determine if the current instance is locked.
+     * Boots the optimistic lock functionality for a model utilizing this trait.
+     * Typically used to handle scenarios where concurrent updates to the same record might occur, ensuring data
+     * integrity.
      */
-    public static function isLocked(): bool
+    protected static function bootHasOptimisticLock(): void
     {
-        return static::$locked;
-    }
-
-    /**
-     * Unlocks the current instance by setting its locked state to false.
-     */
-    public static function unlock(): void
-    {
-        static::$locked = false;
-    }
-
-    /**
-     * Re-locks the model by setting its locked state to true.
-     */
-    public static function relock(): void
-    {
-        static::$locked = true;
-    }
-
-    /**
-     * Execute the given callback while the current process remains unlocked.
-     *
-     * @template TResult
-     *
-     * @param  Closure(): TResult  $callback  The callback to execute while the process is unlocked.
-     * @return TResult The result of the callback execution.
-     */
-    public static function unlocked(Closure $callback)
-    {
-        if ( ! static::$locked) {
-            return $callback();
+        // Load the version field attribute from the class attributes' library.
+        if (empty(static::$versionField)) {
+            static::$versionField = static::getOptimisticLockFieldName() ?? 'version';
         }
 
-        static::unlock();
+        // Subscribe to "creating" event to set the version field value.
+        static::creating(function (Model $model) {
+            if ( ! $model instanceof Lockable) {
+                throw OptimisticLockException::interfaceRequired(static::class);
+            }
 
-        try {
-            return $callback();
-        } finally {
-            static::relock();
-        }
+            if ($model->lockVersion() === null) {
+                $model->setAttribute(static::$versionField, $model->getNextLockVersion());
+            }
+        });
     }
 
     /**
@@ -102,17 +79,6 @@ trait HasOptimisticLock
             ->get();
 
         return $parse?->attributes[0]->field ?? null;
-    }
-
-    /**
-     * Save the model instance without applying locking mechanisms.
-     *
-     * @param  array  $options  Array of options to be passed while saving the model.
-     * @return bool Returns true if the model was successfully saved; otherwise, false.
-     */
-    public function saveUnlocked(array $options = []): bool
-    {
-        return static::unlocked(fn(): bool => $this->save($options));
     }
 
     /**
@@ -142,27 +108,94 @@ trait HasOptimisticLock
     }
 
     /**
-     * Boots the optimistic lock functionality for a model utilizing this trait.
-     * Typically used to handle scenarios where concurrent updates to the same record might occur, ensuring data
-     * integrity.
+     * Save the model instance without applying locking mechanisms.
+     *
+     * @param  array  $options  Array of options to be passed while saving the model.
+     * @return bool Returns true if the model was successfully saved; otherwise, false.
      */
-    protected static function bootHasOptimisticLock(): void
+    public function saveUnlocked(array $options = []): bool
     {
-        // Load the version field attribute from the class attributes' library.
-        if (empty(static::$versionField)) {
-            static::$versionField = static::getOptimisticLockFieldName() ?? 'version';
+        return static::unlocked(fn(): bool => $this->save($options));
+    }
+
+    /**
+     * Execute the given callback while the current process remains unlocked.
+     *
+     * @template TResult
+     *
+     * @param  Closure(): TResult  $callback  The callback to execute while the process is unlocked.
+     * @return TResult The result of the callback execution.
+     */
+    public static function unlocked(Closure $callback)
+    {
+        if ( ! static::$locked) {
+            return $callback();
         }
 
-        // Subscribe to "creating" event to set the version field value.
-        static::creating(function (Model $model) {
-            if ( ! $model instanceof Lockable) {
-                throw OptimisticLockException::interfaceRequired(static::class);
-            }
+        static::unlock();
 
-            if ($model->lockVersion() === null) {
-                $model->setAttribute(static::$versionField, $model->getNextLockVersion());
-            }
-        });
+        try {
+            return $callback();
+        } finally {
+            static::relock();
+        }
+    }
+
+    /**
+     * Unlocks the current instance by setting its locked state to false.
+     */
+    public static function unlock(): void
+    {
+        static::$locked = false;
+    }
+
+    /**
+     * Re-locks the model by setting its locked state to true.
+     */
+    public static function relock(): void
+    {
+        static::$locked = true;
+    }
+
+    /**
+     * Perform a model update operation.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Override]
+    protected function performUpdate(Builder $query): bool
+    {
+        // If the updating event returns false, we will cancel the update operation so
+        // developers can hook Validation systems into their models and cancel this
+        // operation if the model does not pass validation. Otherwise, we update.
+        if ($this->fireModelEvent('updating') === false) {
+            return false;
+        }
+
+        // First we need to create a fresh query instance and touch the creation and
+        // update timestamp on the model which are maintained by us for developer
+        // convenience. Then we will just continue saving the model instances.
+        if ($this->usesTimestamps()) {
+            $this->updateTimestamps();
+        }
+
+        // Once we have run the update operation, we will fire the "updated" event for
+        // this model instance. This will allow developers to hook into these after
+        // models are updated, giving them a chance to do any special processing.
+        $dirty = $this->getDirtyForUpdate();
+
+        if (count($dirty) > 0) {
+            $this->setKeysForSaveQuery($query);
+
+            // Run locking logic.
+            $this->performLockingLogic($query, $dirty);
+
+            $this->syncChanges();
+
+            $this->fireModelEvent('updated', false);
+        }
+
+        return true;
     }
 
     /**
@@ -211,43 +244,10 @@ trait HasOptimisticLock
     }
 
     /**
-     * Perform a model update operation.
-     *
-     * @param  Builder<static>  $query
+     * Determine if the current instance is locked.
      */
-    #[Override]
-    protected function performUpdate(Builder $query): bool
+    public static function isLocked(): bool
     {
-        // If the updating event returns false, we will cancel the update operation so
-        // developers can hook Validation systems into their models and cancel this
-        // operation if the model does not pass validation. Otherwise, we update.
-        if ($this->fireModelEvent('updating') === false) {
-            return false;
-        }
-
-        // First we need to create a fresh query instance and touch the creation and
-        // update timestamp on the model which are maintained by us for developer
-        // convenience. Then we will just continue saving the model instances.
-        if ($this->usesTimestamps()) {
-            $this->updateTimestamps();
-        }
-
-        // Once we have run the update operation, we will fire the "updated" event for
-        // this model instance. This will allow developers to hook into these after
-        // models are updated, giving them a chance to do any special processing.
-        $dirty = $this->getDirtyForUpdate();
-
-        if (count($dirty) > 0) {
-            $this->setKeysForSaveQuery($query);
-
-            // Run locking logic.
-            $this->performLockingLogic($query, $dirty);
-
-            $this->syncChanges();
-
-            $this->fireModelEvent('updated', false);
-        }
-
-        return true;
+        return static::$locked;
     }
 }

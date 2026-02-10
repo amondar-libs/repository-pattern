@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Proxies;
 
@@ -24,7 +24,7 @@ readonly class HigherOrderUnlockedProxy
     /**
      * HighOrderQuietlyProxy constructor.
      *
-     * @param Repository<TModel, TData> $repository
+     * @param  Repository<TModel, TData>  $repository
      */
     public function __construct(private Repository $repository)
     {
@@ -34,8 +34,6 @@ readonly class HigherOrderUnlockedProxy
     /**
      * Proxy a method call onto the collection items.
      *
-     * @param string $method
-     * @param array  $parameters
      *
      * @return mixed
      */
@@ -46,5 +44,4 @@ readonly class HigherOrderUnlockedProxy
 
         return $modelClass::unlocked(fn() => $this->repository->{$method}(...$parameters));
     }
-
 }

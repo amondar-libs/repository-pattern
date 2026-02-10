@@ -21,28 +21,6 @@ use Spatie\LaravelData\Data;
 trait HasCreateCommand
 {
     /**
-     * Defines a method that must be implemented to return a repository instance.
-     *
-     * @return Repository<TModel, TData>|TRepository
-     */
-    abstract protected function repository();
-
-    /**
-     * Determines which relations should be loaded after changes have been applied.
-     *
-     * @return array An array of relation names that need to be loaded.
-     */
-    abstract protected function shouldLoadRelationsAfterChangesApplied(): array;
-
-    /**
-     * Stores model relations.
-     *
-     * @param  Model|TModel  $model
-     * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
-     */
-    abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
-
-    /**
      * Creates a new entity or record based on the provided data.
      *
      * @param  array<string, mixed>|TData  $data  The data used to create the entity or record.
@@ -80,6 +58,21 @@ trait HasCreateCommand
     }
 
     /**
+     * Defines a method that must be implemented to return a repository instance.
+     *
+     * @return Repository<TModel, TData>|TRepository
+     */
+    abstract protected function repository();
+
+    /**
+     * Stores model relations.
+     *
+     * @param  Model|TModel  $model
+     * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
+     */
+    abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
+
+    /**
      * Executes actions immediately after the model has been fully created with all relations.
      *
      * @param  TModel|Model  $model
@@ -89,4 +82,11 @@ trait HasCreateCommand
     {
         // Apply some actions right after model FULLY created with all relationships.
     }
+
+    /**
+     * Determines which relations should be loaded after changes have been applied.
+     *
+     * @return array An array of relation names that need to be loaded.
+     */
+    abstract protected function shouldLoadRelationsAfterChangesApplied(): array;
 }
