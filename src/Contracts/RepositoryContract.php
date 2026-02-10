@@ -14,7 +14,7 @@ use Spatie\LaravelData\Data;
 /**
  * Interface RepositoryContract
  *
- * @template TModel of Model
+ * @template TModel
  * @template TData
  *
  * @see    Builder

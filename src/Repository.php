@@ -19,7 +19,7 @@ use Spatie\StructureDiscoverer\Cache\DiscoverCacheDriver;
 /**
  * Class Repository
  *
- * @template TModel of \Illuminate\Database\Eloquent\Model
+ * @template TModel
  * @template TData
  *
  * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
