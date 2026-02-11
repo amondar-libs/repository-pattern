@@ -46,24 +46,17 @@ trait HasUpdateCommand
      * Updates an existing model with the provided data, performing normalization,
      * triggers for hooks, and handling model relationships.
      *
-     * @param  TModel|string|int  $model  The model instance to be updated.
+     * @param  TModel  $model  The model instance to be updated.
      * @param  array<string, mixed>|TData  $data  The data used to update the model. This can be an array or a Data
      *                                            object.
      * @return TModel Returns the updated model instance, with related data loaded if applicable.
      */
     public function update($model, array|Data $data)
     {
-        // 0) Validate for required locking.
-        if (is_int($model) || is_string($model)) {
-            return $this->pessimisticUpdate($model, $data);
-        }
-
         // 1) Run any necessary operations before saving.
-        /** @noinspection PhpParamsInspection */
         $this->updatingHook($model, $data);
 
         // 2) Create the model as a record in DB.
-        /** @noinspection PhpParamsInspection */
         $model = $this->repository()->update($model, $data);
 
         // 3) Store related models based on the provided data.
@@ -77,13 +70,11 @@ trait HasUpdateCommand
     /**
      * @return TModel
      */
-    protected function pessimisticUpdate(string|int $modelId, array|Data $data)
+    public function lockAndUpdate(string|int $modelId, array|Data $data)
     {
-        return DB::transaction(function () use ($modelId, $data) {
-            $lockedModel = $this->repository()->transaction->getLock($modelId);
+        $lockedModel = $this->repository()->transaction->getLock($modelId);
 
-            return $this->update($lockedModel, $data);
-        });
+        return $this->update($lockedModel, $data);
     }
 
     /**
