@@ -7,6 +7,7 @@ namespace Amondar\RepositoryPattern\Proxies;
 use Amondar\RepositoryPattern\Enums\LockType;
 use Amondar\RepositoryPattern\Repository;
 use Closure;
+use Illuminate\Events\NullDispatcher;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -32,6 +33,7 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function __construct(
         private Repository $repository,
+        private bool $beQuiet = false,
         private bool $useTrashed = false,
         private LockType $lockType = LockType::forUpdate,
         private int $transactionLevel = 0
@@ -49,7 +51,15 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function __call(string $method, array $parameters)
     {
-        return DB::transaction(fn() => $this->repository->{$method}(...$parameters));
+        if ($this->useTrashed) {
+            throw new RuntimeException("`->withTrashed` modifier can't be used with direct repository methods");
+        }
+
+        return DB::transaction(
+            fn() => $this->beQuiet ?
+            $this->repository->quietly->{$method}(...$parameters)
+        : $this->repository->{$method}(...$parameters)
+        );
     }
 
     /**
@@ -63,11 +73,11 @@ readonly class HigherOrderRepositoryTransactionProxy
     public function __get(string $name)
     {
         if ($name === 'quietly') {
-            return DB::transaction(fn() => $this->repository->$name);
+            return new static($this->repository, true, $this->useTrashed, $this->lockType, $this->transactionLevel);
         }
 
         if ($name === 'withTrashed') {
-            return new static($this->repository, true);
+            return new static($this->repository, $this->beQuiet, true, $this->lockType, $this->transactionLevel);
         }
 
         throw new RuntimeException("Undefined property: $name");
@@ -81,7 +91,7 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function onLevel(int $level): static
     {
-        return new static($this->repository, $this->useTrashed, $this->lockType, $level);
+        return new static($this->repository, $this->beQuiet, $this->useTrashed, $this->lockType, $level);
     }
 
     /**
@@ -91,7 +101,7 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function asShared(): static
     {
-        return new static($this->repository, $this->useTrashed, LockType::shared, $this->transactionLevel);
+        return new static($this->repository, $this->beQuiet, $this->useTrashed, LockType::shared, $this->transactionLevel);
     }
 
     /**
@@ -109,13 +119,26 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function forUpdate(string|int $key, Closure $callback)
     {
-        if (DB::transactionLevel() === $this->transactionLevel) {
-            return DB::transaction(function () use ($key, $callback) {
-                return $callback($this->getLock($key), $this->repository);
-            });
+        $modelClass = $this->repository->model();
+        $dispatcher = $modelClass::getEventDispatcher();
+
+        if ($this->beQuiet && $dispatcher) {
+            $modelClass::setEventDispatcher(new NullDispatcher($dispatcher));
         }
 
-        return $callback($this->getLock($key), $this->repository);
+        try {
+            if (DB::transactionLevel() === $this->transactionLevel) {
+                return DB::transaction(function () use ($key, $callback) {
+                    return $callback($this->getLock($key), $this->repository);
+                });
+            }
+
+            return $callback($this->getLock($key), $this->repository);
+        } finally {
+            if ($dispatcher) {
+                $modelClass::setEventDispatcher($dispatcher);
+            }
+        }
     }
 
     /**

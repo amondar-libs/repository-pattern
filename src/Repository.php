@@ -144,17 +144,6 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     }
 
     /**
-     * Processes and normalizes the given data to a consistent format.
-     *
-     * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
-     * @return array|null The normalized data.
-     */
-    final public function normalizeData(array|Data|null $data): ?array
-    {
-        return $this->isDataClass($data) ? $data->toArray() : $data;
-    }
-
-    /**
      * Updates the given model with the provided data.
      *
      * @param  TModel  $model  The model instance to update.
@@ -195,6 +184,17 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     final public function push($model): bool
     {
         return $model->push();
+    }
+
+    /**
+     * Processes and normalizes the given data to a consistent format.
+     *
+     * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
+     * @return array|null The normalized data.
+     */
+    final public function normalizeData(array|Data|null $data): ?array
+    {
+        return $this->isDataClass($data) ? $data->toArray() : $data;
     }
 
     /**

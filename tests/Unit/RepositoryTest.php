@@ -373,7 +373,11 @@ it('can run transaction pessimistic lock', function () {
 
     expect($result->name)->toBe('Oleg Sereda 2');
 
-    $result = $repository->transaction->withTrashed->asShared()->forUpdate(
+    Event::fake([
+        $updatedEvent = 'eloquent.updated: ' . User::class,
+    ]);
+
+    $result = $repository->transaction->withTrashed->quietly->asShared()->forUpdate(
         $model->getKey(),
         function (User $model, RepositoryContract $repository) {
             // Check that level not changed.
@@ -387,6 +391,8 @@ it('can run transaction pessimistic lock', function () {
             return $model;
         }
     );
+
+    Event::assertNotDispatched($updatedEvent);
 
     expect($result->name)->toBe('Oleg Sereda 3');
 })->group('repository');
