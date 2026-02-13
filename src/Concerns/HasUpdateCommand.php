@@ -84,6 +84,17 @@ trait HasUpdateCommand
     }
 
     /**
+     * Returns the model instance under pessimistic lock.
+     *
+     * @param  array<string, mixed>|TData  $data
+     * @return TModel
+     */
+    protected function getLock(string|int $modelId, array|Data $data)
+    {
+        return $this->repository()->transaction->getLock($modelId);
+    }
+
+    /**
      * Allows modifications or actions to be performed on data before updating a model.
      *
      * @param  TModel|Model  $model
@@ -105,14 +116,5 @@ trait HasUpdateCommand
     protected function updatedHook(Model $model, array|Data $data): void
     {
         // Apply some actions right after model FULLY updated with all relationships.
-    }
-
-    /**
-     * @param  array<string, mixed>|TData  $data
-     * @return TModel
-     */
-    protected function getLock(string|int $modelId, array|Data $data)
-    {
-        return $this->repository()->transaction->getLock($modelId);
     }
 }
