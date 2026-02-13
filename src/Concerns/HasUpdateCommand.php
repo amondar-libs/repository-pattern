@@ -78,7 +78,7 @@ trait HasUpdateCommand
     public function lockAndUpdate(string|int $modelId, array|Data $data)
     {
         return $this->update(
-            $this->getLock($modelId),
+            $this->getLock($modelId, $data),
             $data
         );
     }
@@ -108,11 +108,10 @@ trait HasUpdateCommand
     }
 
     /**
-     * @param string|int $modelId
-     *
+     * @param  array<string, mixed>|TData  $data
      * @return TModel
      */
-    protected function getLock(string|int $modelId)
+    protected function getLock(string|int $modelId, array|Data $data)
     {
         return $this->repository()->transaction->getLock($modelId);
     }
