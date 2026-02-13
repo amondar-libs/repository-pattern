@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace Tests\Unit;
 
@@ -203,7 +203,7 @@ it('can normalize data', function () {
     expect($repository->normalizeData([]))
         ->toBeArray()
         ->toBeEmpty()
-        ->and($repository->normalizeData(NULL))
+        ->and($repository->normalizeData(null))
         ->toBeNull()
         ->and($repository->normalizeData(TestData::from([
             'name'  => 'Oleg Sereda',
@@ -359,17 +359,19 @@ it('can run transaction pessimistic lock', function () {
     ]);
 
     $result = $repository->transaction->withTrashed->onLevel(1)
-                                                   ->forUpdate($model->getKey(),
-                                                       function (User $model, RepositoryContract $repository): User {
-                                                           // Check for the new level of transaction.
-                                                           expect(DB::transactionLevel())->toBe(2);
+        ->forUpdate(
+            $model->getKey(),
+            function (User $model, RepositoryContract $repository): User {
+                // Check for the new level of transaction.
+                expect(DB::transactionLevel())->toBe(2);
 
-                                                           $repository->update($model, [
-                                                               'name' => 'Oleg Sereda 2',
-                                                           ]);
+                $repository->update($model, [
+                    'name' => 'Oleg Sereda 2',
+                ]);
 
-                                                           return $model;
-                                                       });
+                return $model;
+            }
+        );
 
     expect($result->name)->toBe('Oleg Sereda 2');
 

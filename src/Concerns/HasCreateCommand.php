@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
 
 /**
- * Trait HasCreateService
+ * Trait HasCreateCommand
  *
  * @template TModel
  * @template TData

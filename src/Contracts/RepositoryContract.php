@@ -8,7 +8,6 @@ use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
 
 /**
