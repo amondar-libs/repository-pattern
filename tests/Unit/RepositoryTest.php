@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
@@ -397,4 +398,48 @@ it('can run transaction pessimistic lock', function () {
     Event::assertNotDispatched($updatedEvent);
 
     expect($result->name)->toBe('Oleg Sereda 3');
+})->group('repository');
+
+it('can run transaction pessimistic lock with query update', function () {
+    $repository = new UserRepository;
+
+    expect($repository->transaction->withTrashed->shouldUseTrashed())
+        ->toBeTrue()
+        ->and($repository->transaction->shouldUseTrashed())
+        ->toBeFalse();
+
+    $model = $repository->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    expect(fn() => $repository->transaction->withTrashed
+        ->onLevel(1)
+        ->withQuery(static fn(Builder $query): Builder => $query->where('is_active', false)->where('is_admin', false))
+        ->getLock($model->getKey()))
+        ->toThrow("No query results for model [Tests\_fixtures\User].");
+
+    $result = $repository->transaction->withTrashed->onLevel(1)
+        ->withQuery(fn(Builder $query): Builder => $query->where(
+            'is_active',
+            true
+        )->where('is_admin', false))
+        ->forUpdate(
+            $model->getKey(),
+            function (User $model, RepositoryContract $repository): User {
+                // Check for the new level of transaction.
+                expect(DB::transactionLevel())->toBe(2);
+
+                $repository->update($model, [
+                    'name' => 'Oleg Sereda 2',
+                ]);
+
+                return $model;
+            }
+        );
+
+    expect($result->name)->toBe('Oleg Sereda 2');
 })->group('repository');
