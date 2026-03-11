@@ -39,7 +39,7 @@ trait HasCreateCommand
 
             $this->createdHook($model, $data);
 
-            return $model->load($this->shouldLoadRelationsAfterChangesApplied());
+            return $model->fresh($this->shouldLoadRelationsAfterChangesApplied());
         }
 
         throw ModelNotSaved::notCreated($this->repository()->model());
