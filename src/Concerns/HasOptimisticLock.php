@@ -4,15 +4,14 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Concerns;
 
-use Amondar\ClassAttributes\Parse;
 use Amondar\RepositoryPattern\Attributes\VersionField;
 use Amondar\RepositoryPattern\Contracts\Lockable;
-use Amondar\RepositoryPattern\Contracts\WithAttributesCache;
 use Amondar\RepositoryPattern\Exceptions\OptimisticLockException;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Override;
+use Spatie\Attributes\Attributes;
 
 /**
  * Trait HasOptimisticLock
@@ -39,46 +38,62 @@ trait HasOptimisticLock
     protected static bool $locked = true;
 
     /**
-     * Boots the optimistic lock functionality for a model utilizing this trait.
-     * Typically used to handle scenarios where concurrent updates to the same record might occur, ensuring data
-     * integrity.
-     */
-    protected static function bootHasOptimisticLock(): void
-    {
-        // Load the version field attribute from the class attributes' library.
-        if (empty(static::$versionField)) {
-            static::$versionField = static::getOptimisticLockFieldName() ?? 'version';
-        }
-
-        // Subscribe to "creating" event to set the version field value.
-        static::creating(function (Model $model) {
-            if ( ! $model instanceof Lockable) {
-                throw OptimisticLockException::interfaceRequired(static::class);
-            }
-
-            if ($model->lockVersion() === null) {
-                $model->setAttribute(static::$versionField, $model->getNextLockVersion());
-            }
-        });
-    }
-
-    /**
      * Retrieves the field name used for optimistic locking in the current model.
      *
      * @return string|null The name of the optimistic lock field if defined, or null if not available.
      */
     public static function getOptimisticLockFieldName(): ?string
     {
-        $cacheStore = is_subclass_of(static::class, WithAttributesCache::class) ?
-            static::getAttributesCache() : null;
+        $parse = Attributes::get(static::class, VersionField::class);
 
-        $parse = Parse::attribute(VersionField::class)
-            ->on(static::class)
-            ->ascend()
-            ->withCache($cacheStore)
-            ->get();
+        return $parse?->field ?? null;
+    }
 
-        return $parse?->attributes[0]->field ?? null;
+    /**
+     * Execute the given callback while the current process remains unlocked.
+     *
+     * @template TResult
+     *
+     * @param  Closure(): TResult  $callback  The callback to execute while the process is unlocked.
+     * @return TResult The result of the callback execution.
+     */
+    public static function unlocked(Closure $callback)
+    {
+        if ( ! static::$locked) {
+            return $callback();
+        }
+
+        static::unlock();
+
+        try {
+            return $callback();
+        } finally {
+            static::relock();
+        }
+    }
+
+    /**
+     * Unlocks the current instance by setting its locked state to false.
+     */
+    public static function unlock(): void
+    {
+        static::$locked = false;
+    }
+
+    /**
+     * Re-locks the model by setting its locked state to true.
+     */
+    public static function relock(): void
+    {
+        static::$locked = true;
+    }
+
+    /**
+     * Determine if the current instance is locked.
+     */
+    public static function isLocked(): bool
+    {
+        return static::$locked;
     }
 
     /**
@@ -119,42 +134,27 @@ trait HasOptimisticLock
     }
 
     /**
-     * Execute the given callback while the current process remains unlocked.
-     *
-     * @template TResult
-     *
-     * @param  Closure(): TResult  $callback  The callback to execute while the process is unlocked.
-     * @return TResult The result of the callback execution.
+     * Boots the optimistic lock functionality for a model utilizing this trait.
+     * Typically used to handle scenarios where concurrent updates to the same record might occur, ensuring data
+     * integrity.
      */
-    public static function unlocked(Closure $callback)
+    protected static function bootHasOptimisticLock(): void
     {
-        if ( ! static::$locked) {
-            return $callback();
+        // Load the version field attribute from the class attributes' library.
+        if (empty(static::$versionField)) {
+            static::$versionField = static::getOptimisticLockFieldName() ?? 'version';
         }
 
-        static::unlock();
+        // Subscribe to "creating" event to set the version field value.
+        static::creating(function (Model $model) {
+            if ( ! $model instanceof Lockable) {
+                throw OptimisticLockException::interfaceRequired(static::class);
+            }
 
-        try {
-            return $callback();
-        } finally {
-            static::relock();
-        }
-    }
-
-    /**
-     * Unlocks the current instance by setting its locked state to false.
-     */
-    public static function unlock(): void
-    {
-        static::$locked = false;
-    }
-
-    /**
-     * Re-locks the model by setting its locked state to true.
-     */
-    public static function relock(): void
-    {
-        static::$locked = true;
+            if ($model->lockVersion() === null) {
+                $model->setAttribute(static::$versionField, $model->getNextLockVersion());
+            }
+        });
     }
 
     /**
@@ -241,13 +241,5 @@ trait HasOptimisticLock
 
             throw OptimisticLockException::fire(static::class, $oldVersion, $version);
         }
-    }
-
-    /**
-     * Determine if the current instance is locked.
-     */
-    public static function isLocked(): bool
-    {
-        return static::$locked;
     }
 }

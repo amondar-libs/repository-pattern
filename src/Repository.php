@@ -4,7 +4,6 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern;
 
-use Amondar\ClassAttributes\Parse;
 use Amondar\RepositoryPattern\Attributes\UseModel;
 use Amondar\RepositoryPattern\Contracts\Lockable;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
@@ -13,8 +12,8 @@ use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
 use Illuminate\Database\Eloquent\Builder;
 use RuntimeException;
+use Spatie\Attributes\Attributes;
 use Spatie\LaravelData\Data;
-use Spatie\StructureDiscoverer\Cache\DiscoverCacheDriver;
 
 /**
  * Class Repository
@@ -51,17 +50,13 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function __construct()
     {
-        $result = Parse::attribute(UseModel::class)
-            ->on(static::class)
-            ->ascend()
-            ->withCache($this->getAttributesCache())
-            ->get();
+        $result = Attributes::get(static::class, UseModel::class);
 
         if (is_null($result)) {
             throw RepositoryModelNotFound::make(static::class);
         }
 
-        $this->modelClass = $result->attributes[0]->modelClass;
+        $this->modelClass = $result->modelClass;
 
         $this->useLockable = is_subclass_of($this->modelClass, Lockable::class);
     }
@@ -195,14 +190,6 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     final public function normalizeData(array|Data|null $data): ?array
     {
         return $this->isDataClass($data) ? $data->toArray() : $data;
-    }
-
-    /**
-     * Retrieves the cached attributes driver if available.
-     */
-    protected function getAttributesCache(): ?DiscoverCacheDriver
-    {
-        return null;
     }
 
     /**
