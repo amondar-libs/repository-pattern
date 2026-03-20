@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Concerns;
 
+use Amondar\ClassAttributes\Support\Attribute;
 use Amondar\RepositoryPattern\Attributes\VersionField;
 use Amondar\RepositoryPattern\Contracts\Lockable;
 use Amondar\RepositoryPattern\Exceptions\OptimisticLockException;
@@ -11,7 +12,6 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Override;
-use Spatie\Attributes\Attributes;
 
 /**
  * Trait HasOptimisticLock
@@ -44,9 +44,11 @@ trait HasOptimisticLock
      */
     public static function getOptimisticLockFieldName(): ?string
     {
-        $parse = Attributes::get(static::class, VersionField::class);
+        $parse = Attribute::for(VersionField::class)
+            ->ascend()
+            ->on(static::class);
 
-        return $parse?->field ?? null;
+        return ($parse[0] ?? null)?->attribute->field;
     }
 
     /**

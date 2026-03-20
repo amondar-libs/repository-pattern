@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern;
 
+use Amondar\ClassAttributes\Support\Attribute;
 use Amondar\RepositoryPattern\Attributes\UseModel;
 use Amondar\RepositoryPattern\Contracts\Lockable;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
@@ -12,7 +13,6 @@ use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
 use Illuminate\Database\Eloquent\Builder;
 use RuntimeException;
-use Spatie\Attributes\Attributes;
 use Spatie\LaravelData\Data;
 
 /**
@@ -50,13 +50,15 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function __construct()
     {
-        $result = Attributes::get(static::class, UseModel::class);
+        $result = Attribute::for(UseModel::class)
+            ->ascend()
+            ->on(static::class);
 
-        if (is_null($result)) {
+        if ($result === []) {
             throw RepositoryModelNotFound::make(static::class);
         }
 
-        $this->modelClass = $result->modelClass;
+        $this->modelClass = $result[0]->attribute->modelClass;
 
         $this->useLockable = is_subclass_of($this->modelClass, Lockable::class);
     }
