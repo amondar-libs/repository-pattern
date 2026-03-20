@@ -10,7 +10,7 @@ Laravel package to implement a clean Repository + Service pattern with a tiny, e
 ## Requirements
 
 - PHP ^8.3
-- Laravel 10/11/12 (uses Eloquent, DB facade)
+- Laravel 10/11/12/13 (uses Eloquent, DB facade)
 - spatie/laravel-data (optional, for typed DTOs)
 
 ## Installation
