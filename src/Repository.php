@@ -103,7 +103,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @return Builder<TModel>
      */
-    final public function query()
+    public function query()
     {
         return $this->makeModel()->query();
     }
@@ -113,7 +113,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @return TModel An instance of the specified model class.
      */
-    final public function makeModel()
+    public function makeModel()
     {
         return new ($this->model())();
     }
@@ -123,7 +123,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @return class-string<TModel> The fully qualified class name of the model.
      */
-    final public function model(): string
+    public function model(): string
     {
         return $this->modelClass;
     }
@@ -135,7 +135,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *                                            the Data class.
      * @return TModel Return a created model instance.
      */
-    final public function create(array|Data $data)
+    public function create(array|Data $data)
     {
         return tap($this->fillTheModel($this->makeModel(), $data))->save();
     }
@@ -148,7 +148,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *                                            or an instance of the Data class which will be converted to an array.
      * @return TModel The updated model instance.
      */
-    final public function update($model, array|Data $data)
+    public function update($model, array|Data $data)
     {
         return tap($this->fillTheModel($model, $data))->save();
     }
@@ -163,7 +163,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *                              default behavior.
      * @return int The number of affected rows.
      */
-    final public function upsert(array|Data $data, array|string $uniqueBy, ?array $update = null): int
+    public function upsert(array|Data $data, array|string $uniqueBy, ?array $update = null): int
     {
         return $this->query()->upsert(
             $this->normalizeData($data),
@@ -178,9 +178,20 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      * @param  TModel  $model  The model instance to be saved along with its relationships.
      * @return bool True if the operation was successful, false otherwise.
      */
-    final public function push($model): bool
+    public function push($model): bool
     {
         return $model->push();
+    }
+
+    /**
+     * @param  TModel|string|int  $model
+     */
+    public function deleteBy(mixed $model, ?string $key = null): bool|null|int
+    {
+        return $this->query()
+            ->when($key === null, fn($q) => $q->whereKey($model))
+            ->when($key !== null, fn($q) => $q->where($key, $model))
+            ->delete();
     }
 
     /**
@@ -189,7 +200,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
      * @return array|null The normalized data.
      */
-    final public function normalizeData(array|Data|null $data): ?array
+    public function normalizeData(array|Data|null $data): ?array
     {
         return $this->isDataClass($data) ? $data->toArray() : $data;
     }
@@ -246,7 +257,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     protected function isDataClass($data): bool
     {
-        return $data !== null && is_object($data) && (
+        return is_object($data) && (
             $data instanceof Data
             || method_exists($data, 'toArray')
         );

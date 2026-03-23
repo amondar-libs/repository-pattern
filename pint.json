@@ -39,7 +39,6 @@
     "backtick_to_shell_exec": true,
     "date_time_immutable": true,
     "final_internal_class": true,
-    "final_public_method_for_abstract_class": true,
     "fully_qualified_strict_types": true,
     "mb_str_functions": true,
     "modernize_types_casting": true,
