@@ -89,6 +89,14 @@ interface RepositoryContract
     public function push($model): bool;
 
     /**
+     * Deletes a record or multiple records from the database based on the given model and optional key.
+     *
+     * @param  TModel|string|int  $model  The model instance, primary key, or array of primary keys to be deleted.
+     * @param  string|null  $key  An optional column name to be used for the deletion condition. Defaults to the primary key.
+     */
+    public function deleteBy(mixed $model, ?string $key = null): int;
+
+    /**
      * Processes and normalizes the given data to a consistent format.
      *
      * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.

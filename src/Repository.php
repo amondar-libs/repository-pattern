@@ -184,9 +184,12 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     }
 
     /**
-     * @param  TModel|string|int  $model
+     * Deletes a record or multiple records from the database based on the given model and optional key.
+     *
+     * @param  TModel|string|int  $model  The model instance, primary key, or array of primary keys to be deleted.
+     * @param  string|null  $key  An optional column name to be used for the deletion condition. Defaults to the primary key.
      */
-    public function deleteBy(mixed $model, ?string $key = null): bool|null|int
+    public function deleteBy(mixed $model, ?string $key = null): int
     {
         return $this->query()
             ->when($key === null, fn($q) => $q->whereKey($model))
@@ -198,7 +201,6 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      * Processes and normalizes the given data to a consistent format.
      *
      * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
-     * @return array|null The normalized data.
      */
     public function normalizeData(array|Data|null $data): ?array
     {
