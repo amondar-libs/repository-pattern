@@ -13,7 +13,7 @@ it('should apply version field during creation', function () {
     ]);
 
     expect($model->lockVersion())->toBe(1);
-})->group('lock::optimistic');
+});
 
 it('should apply versioning logic during update', function () {
     $model = VersionedPost::create([
@@ -25,7 +25,7 @@ it('should apply versioning logic during update', function () {
     $model->save();
 
     expect($model->lockVersion())->toBe(2);
-})->group('lock::optimistic');
+});
 
 it('should throw an exception on race condition', function () {
     $model = VersionedPost::create([
@@ -45,7 +45,7 @@ it('should throw an exception on race condition', function () {
     expect(fn() => $same->save())
         ->toThrow(OptimisticLockException::fire(VersionedPost::class, 1, 2))
         ->and($same->lockVersion())->toBe(1);
-})->group('lock::optimistic');
+});
 
 it('should work with unblocking', function () {
     $model = VersionedPost::create([
@@ -69,7 +69,7 @@ it('should work with unblocking', function () {
         ->and($model->fresh())
         ->lockVersion()->toBe(2)
         ->title->toBe('My title 2');
-})->group('lock::optimistic');
+});
 
 it('can run optimistic lock thorough repository', function () {
     $repo = new VersionedPostRepository;
@@ -92,7 +92,7 @@ it('can run optimistic lock thorough repository', function () {
         ]))
         ->toThrow(OptimisticLockException::fire(VersionedPost::class, 1, 2))
         ->and($same->lockVersion())->toBe(1);
-})->group('lock::optimistic');
+});
 
 it('can run unlocked thorough repository', function () {
     $repo = new VersionedPostRepository;
@@ -122,4 +122,4 @@ it('can run unlocked thorough repository', function () {
         ->toBe('My title 2')
         ->lockVersion()
         ->toBe(2);
-})->group('lock::optimistic');
+});

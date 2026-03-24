@@ -190,7 +190,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     {
         return $this->query()
             ->when($key === null, fn($q) => $q->whereKey($model))
-            ->when($key !== null, fn($q) => $q->where($key, $model))
+            ->when($key !== null, fn($q) => $q->where($key, is_object($model) ? $model->getKey() : $model))
             ->delete();
     }
 

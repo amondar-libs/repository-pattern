@@ -25,7 +25,7 @@ it('can make user model', function () {
     $repository = new UserRepository;
 
     expect($repository->makeModel())->toBeInstanceOf(User::class);
-})->group('repository');
+});
 
 it('can create user', function () {
     Event::fake([
@@ -50,7 +50,7 @@ it('can create user', function () {
 
     Event::assertDispatched($creatingEvent);
     Event::assertDispatched($createdEvent);
-})->group('repository');
+});
 
 it('can create user quietly', function () {
     Event::fake([
@@ -84,7 +84,7 @@ it('can create user quietly', function () {
 
     Event::assertNotDispatched($creatingEvent);
     Event::assertNotDispatched($createdEvent);
-})->group('repository');
+});
 
 it('can update user', function () {
     Event::fake([
@@ -116,7 +116,7 @@ it('can update user', function () {
 
     Event::assertDispatched($updatingEvent);
     Event::assertDispatched($updatedEvent);
-})->group('repository');
+});
 
 it('can update user quietly', function () {
     Event::fake([
@@ -148,13 +148,13 @@ it('can update user quietly', function () {
 
     Event::assertNotDispatched($updatingEvent);
     Event::assertNotDispatched($updatedEvent);
-})->group('repository');
+});
 
 it('will throw an exception without attribute', function () {
     expect(fn() => new WrongUserRepository)->toThrow(
         RepositoryModelNotFound::make(WrongUserRepository::class)
     );
-})->group('repository');
+});
 
 it('can apply builder calls', function () {
     $repository = new UserRepository;
@@ -196,7 +196,7 @@ it('can apply builder calls', function () {
         // simple join
         ->and($repository->join('profiles', 'profiles.user_id', '=', 'users.id')->toSql())
         ->toBe('select * from "users" inner join "profiles" on "profiles"."user_id" = "users"."id"');
-})->group('repository');
+});
 
 it('can normalize data', function () {
     $repository = new UserRepository;
@@ -215,7 +215,7 @@ it('can normalize data', function () {
             'name'  => 'Oleg Sereda',
             'email' => 'my@email.com',
         ]);
-})->group('repository');
+});
 
 it('can upsert user', function () {
     $repository = new UserRepository;
@@ -281,7 +281,7 @@ it('can upsert user', function () {
     ]);
 
     expect($repository->count())->toBe(1);
-})->group('repository');
+});
 
 it('can push user with all his relations', function () {
     $repository = new UserRepository;
@@ -325,7 +325,7 @@ it('can push user with all his relations', function () {
     assertDatabaseHas('user_addresses', [
         'first_line' => 'Oleg street',
     ]);
-})->group('repository');
+});
 
 it('can get pessimistic lock', function () {
     $repository = new UserRepository;
@@ -341,7 +341,7 @@ it('can get pessimistic lock', function () {
     $result = $repository->transaction->withTrashed->getLock($model->getKey());
 
     expect($result->name)->toBe('Oleg Sereda');
-})->group('repository');
+});
 
 it('can run transaction pessimistic lock', function () {
     $repository = new UserRepository;
@@ -398,7 +398,7 @@ it('can run transaction pessimistic lock', function () {
     Event::assertNotDispatched($updatedEvent);
 
     expect($result->name)->toBe('Oleg Sereda 3');
-})->group('repository');
+});
 
 it('can run transaction pessimistic lock with query update', function () {
     $repository = new UserRepository;
@@ -442,4 +442,40 @@ it('can run transaction pessimistic lock with query update', function () {
         );
 
     expect($result->name)->toBe('Oleg Sereda 2');
-})->group('repository');
+});
+
+it('can delete record by primary key', function () {
+    $repository = new UserRepository;
+
+    $model = $repository->quietly->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    expect($repository->query()->whereKey($model->getKey())->exists())->toBeTrue();
+
+    $repository->deleteBy($model, 'id');
+
+    expect($repository->query()->whereKey($model->getKey())->exists())->toBeFalse();
+});
+
+it('can delete record by any ашудв', function () {
+    $repository = new UserRepository;
+
+    $model = $repository->quietly->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    expect($repository->query()->whereKey($model->getKey())->exists())->toBeTrue();
+
+    $repository->deleteBy('my@email.com', 'email');
+
+    expect($repository->query()->whereKey($model->getKey())->exists())->toBeFalse();
+});
