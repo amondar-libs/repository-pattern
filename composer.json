@@ -9,6 +9,12 @@
             "homepage": "https://github.com/amondar-libs"
         }
     ],
+    "keywords": [
+        "laravel",
+        "repository",
+        "pattern",
+        "laravel-repository-pattern"
+    ],
     "require": {
         "php": "^8.3",
         "spatie/laravel-package-tools": "^1.16",
