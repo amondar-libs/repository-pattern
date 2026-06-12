@@ -6,6 +6,7 @@ namespace Amondar\RepositoryPattern\Concerns;
 
 use Amondar\RepositoryPattern\Repository;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Spatie\LaravelData\Data;
 
 /**
@@ -70,17 +71,21 @@ trait HasUpdateCommand
      * Updates an existing model with the provided data, performing normalization,
      * triggers for hooks, and handling model relationships. All under pessimistic lock.
      *
-     * @param  string|int  $modelId  The model id of the instance to be updated.
-     * @param  array<string, mixed>|TData  $data  The data used to update the model. This can be an array or a Data
+     * @param string|int                 $modelId The model id of the instance to be updated.
+     * @param array<string, mixed>|TData $data    The data used to update the model. This can be an array or a Data
      *                                            object.
+     *
      * @return TModel Returns the updated model instance, with related data loaded if applicable.
+     * @throws \Throwable
      */
     public function lockAndUpdate(string|int $modelId, array|Data $data)
     {
-        return $this->update(
-            $this->getLock($modelId, $data),
-            $data
-        );
+        return DB::transaction(function () use ($modelId, $data) {
+            return $this->update(
+                $this->getLock($modelId, $data),
+                $data
+            );
+        });
     }
 
     /**
