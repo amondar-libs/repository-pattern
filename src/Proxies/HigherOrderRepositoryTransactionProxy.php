@@ -88,10 +88,11 @@ readonly class HigherOrderRepositoryTransactionProxy
 
     /**
      * @template TReturn of mixed
+     * @template TRepository of RepositoryContract<TModel, TData>
      *
      * Execute a Closure within a transaction.
      *
-     * @param  (Closure(RepositoryContract<TModel, TData>): TReturn)  $callback
+     * @param  (Closure(TRepository): TReturn)  $callback
      * @return TReturn
      *
      * @throws Throwable
