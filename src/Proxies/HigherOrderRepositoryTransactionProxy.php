@@ -59,10 +59,8 @@ readonly class HigherOrderRepositoryTransactionProxy
             throw new RuntimeException("`->withTrashed` modifier can't be used with direct repository methods");
         }
 
-        return DB::transaction(
-            fn() => $this->beQuiet ?
-                $this->repository->quietly->{$method}(...$parameters)
-                : $this->repository->{$method}(...$parameters)
+        return $this->run(
+            fn($repository) => $repository->{$method}(...$parameters)
         );
     }
 
@@ -85,6 +83,19 @@ readonly class HigherOrderRepositoryTransactionProxy
         }
 
         throw new RuntimeException("Undefined property: $name");
+    }
+
+    /**
+     * @template TReturn of mixed
+     *
+     * Execute a Closure within a transaction.
+     *
+     * @param  (Closure(Repository<TModel, TData>): TReturn)  $callback
+     * @return TReturn
+     */
+    public function run(Closure $callback, int $attempts = 1)
+    {
+        return DB::transaction(fn() => $callback($this->beQuiet ? $this->repository->quietly : $this->repository), $attempts);
     }
 
     /**

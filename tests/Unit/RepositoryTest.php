@@ -462,7 +462,7 @@ it('can delete record by primary key', function () {
     expect($repository->query()->whereKey($model->getKey())->exists())->toBeFalse();
 });
 
-it('can delete record by any ашудв', function () {
+it('can delete record by any field', function () {
     $repository = new UserRepository;
 
     $model = $repository->quietly->create([
@@ -478,4 +478,64 @@ it('can delete record by any ашудв', function () {
     $repository->deleteBy('my@email.com', 'email');
 
     expect($repository->query()->whereKey($model->getKey())->exists())->toBeFalse();
+});
+
+it('can run transaction directly as callback', function () {
+    Event::fake([
+        $creatingEvent = 'eloquent.creating: ' . User::class,
+        $createdEvent = 'eloquent.created: ' . User::class,
+    ]);
+
+    $repository = new UserRepository;
+
+    $result = $repository->transaction->run(function ($repository) {
+        $model = $repository->create([
+            'name'      => 'Oleg Sereda',
+            'email'     => 'my@email.com',
+            'password'  => '123456',
+            'is_active' => true,
+            'is_admin'  => false,
+        ]);
+
+        expect($repository->query()->whereKey($model->getKey())->exists())->toBeTrue();
+
+        $repository->deleteBy('my@email.com', 'email');
+
+        expect($repository->query()->whereKey($model->getKey())->exists())->toBeFalse();
+
+        return 'My result';
+    });
+
+    expect($result)->toBe('My result');
+
+    Event::assertDispatched($creatingEvent);
+    Event::assertDispatched($createdEvent);
+});
+
+it('can run transaction directly as callback quietly', function () {
+    Event::fake([
+        $creatingEvent = 'eloquent.creating: ' . User::class,
+        $createdEvent = 'eloquent.created: ' . User::class,
+    ]);
+
+    $repository = new UserRepository;
+
+    $result = $repository->transaction->quietly->run(function ($repository) {
+        $repository->create([
+            'name'      => 'Oleg Sereda',
+            'email'     => 'my@email.com',
+            'password'  => '123456',
+            'is_active' => true,
+            'is_admin'  => false,
+        ]);
+
+        $repository->deleteBy('my@email.com', 'email');
+
+        return 'My quietly result';
+    });
+
+    expect($result)->toBe('My quietly result');
+
+    Event::assertNotDispatched($creatingEvent);
+    Event::assertNotDispatched($createdEvent);
 });
