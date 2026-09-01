@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Proxies;
 
+use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Amondar\RepositoryPattern\Enums\LockType;
 use Amondar\RepositoryPattern\Helpers\Current;
 use Amondar\RepositoryPattern\Repository;
@@ -86,16 +87,14 @@ readonly class HigherOrderRepositoryTransactionProxy
     }
 
     /**
-     * Run code in transaction.
-     *
-     * @note This function ignores onLevel instruction in honor of the attempts value.
-     *
      * @template TReturn of mixed
      *
      * Execute a Closure within a transaction.
      *
-     * @param  (Closure(Repository<TModel, TData>): TReturn)  $callback
+     * @param  (Closure(RepositoryContract<TModel, TData>): TReturn)  $callback
      * @return TReturn
+     *
+     * @throws Throwable
      */
     public function run(Closure $callback, int $attempts = 1)
     {
