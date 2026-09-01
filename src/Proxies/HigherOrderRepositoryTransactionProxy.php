@@ -86,6 +86,10 @@ readonly class HigherOrderRepositoryTransactionProxy
     }
 
     /**
+     * Run code in transaction.
+     *
+     * @note This function ignores onLevel instruction in honor of the attempts value.
+     *
      * @template TReturn of mixed
      *
      * Execute a Closure within a transaction.
