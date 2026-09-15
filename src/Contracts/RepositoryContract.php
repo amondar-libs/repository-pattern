@@ -104,7 +104,7 @@ interface RepositoryContract
      */
     public function findBy(string $field, string|int|bool|null $value, array $select = ['*'], Lock|null $lock = null);
 
-    public function existsBy(string $field, string|int|bool|null $value): bool;
+    public function existsBy(string $field, string|int|bool|null $value, string|int|null $primaryKey = null): bool;
 
     /**
      * Find record by primary key.

@@ -232,11 +232,12 @@ abstract readonly class Repository implements Contracts\RepositoryContract
             ->first();
     }
 
-    public function existsBy(string $field, string|int|bool|null $value): bool
+    public function existsBy(string $field, string|int|bool|null $value, string|int|null $primaryKey = null): bool
     {
         return $this
             ->query()
             ->where($field, $value)
+            ->when($primaryKey !== null, fn(Builder $query) => $query->whereKey($primaryKey))
             ->exists();
     }
 
