@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Contracts;
 
+use Amondar\RepositoryPattern\Enums\Lock;
 use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
@@ -101,14 +102,14 @@ interface RepositoryContract
      *
      * @return TModel|null
      */
-    public function findBy(string $field, string|int|bool $value, array $select = ['*'], bool $lockForUpdate = false);
+    public function findBy(string $field, string|int|bool $value, array $select = ['*'], Lock|null $lock = null);
 
     /**
      * Find record by primary key.
      *
      * @return TModel|null
      */
-    public function findById(string $modelId, array $select = ['*'], bool $lockForUpdate = false);
+    public function findById(string $modelId, array $select = ['*'], Lock|null $lock = null);
 
     /**
      * Processes and normalizes the given data to a consistent format.

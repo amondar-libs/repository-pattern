@@ -5,7 +5,7 @@ declare(strict_types = 1);
 namespace Amondar\RepositoryPattern\Proxies;
 
 use Amondar\RepositoryPattern\Contracts\RepositoryContract;
-use Amondar\RepositoryPattern\Enums\LockType;
+use Amondar\RepositoryPattern\Enums\Lock;
 use Amondar\RepositoryPattern\Helpers\Current;
 use Amondar\RepositoryPattern\Repository;
 use Closure;
@@ -39,7 +39,7 @@ readonly class HigherOrderRepositoryTransactionProxy
         private Repository $repository,
         private bool $beQuiet = false,
         private bool $useTrashed = false,
-        private LockType $lockType = LockType::forUpdate,
+        private Lock $lockType = Lock::forUpdate,
         private int $transactionLevel = 0,
         private ?Closure $lockQueryCallback = null,
     ) {
@@ -105,17 +105,18 @@ readonly class HigherOrderRepositoryTransactionProxy
     /**
      * Creates a new instance with the provided options.
      *
-     * @param  bool|Current  $beQuiet  Indicates whether to suppress output or use the current value.
-     * @param  bool|Current  $useTrashed  Specifies whether to include trashed items or use the current value.
-     * @param  LockType|Current  $lockType  Defines the locking type or uses the current value.
-     * @param  int|Current  $transactionLevel  Sets the transaction isolation level or uses the current value.
-     * @param  Closure|null|Current  $lockQueryCallback  Callback to modify the lock query or uses the current value.
+     * @param  bool|Current         $beQuiet           Indicates whether to suppress output or use the current value.
+     * @param  bool|Current         $useTrashed        Specifies whether to include trashed items or use the current value.
+     * @param  Lock|Current         $lockType          Defines the locking type or uses the current value.
+     * @param  int|Current          $transactionLevel  Sets the transaction isolation level or uses the current value.
+     * @param  Closure|null|Current $lockQueryCallback Callback to modify the lock query or uses the current value.
+     *
      * @return static A new instance of the class with the configured options.
      */
     public function makeWithOptions(
         bool|Current $beQuiet = new Current,
         bool|Current $useTrashed = new Current,
-        LockType|Current $lockType = new Current,
+        Lock|Current $lockType = new Current,
         int|Current $transactionLevel = new Current,
         Closure|null|Current $lockQueryCallback = new Current
     ): static {
@@ -147,7 +148,7 @@ readonly class HigherOrderRepositoryTransactionProxy
      */
     public function asShared(): static
     {
-        return $this->makeWithOptions(lockType: LockType::shared);
+        return $this->makeWithOptions(lockType: Lock::shared);
     }
 
     /**

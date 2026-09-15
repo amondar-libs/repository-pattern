@@ -7,6 +7,7 @@ namespace Amondar\RepositoryPattern;
 use Amondar\ClassAttributes\Support\Attribute;
 use Amondar\RepositoryPattern\Attributes\UseModel;
 use Amondar\RepositoryPattern\Contracts\Lockable;
+use Amondar\RepositoryPattern\Enums\Lock;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
 use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
 use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
@@ -204,13 +205,14 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @return TModel|null
      */
-    public function findById(string $modelId, array $select = ['*'], bool $lockForUpdate = false)
+    public function findById(string $modelId, array $select = ['*'], ?Lock $lock = null)
     {
         return $this
             ->query()
             ->select($select)
             ->whereKey($modelId)
-            ->when($lockForUpdate, fn(Builder $query) => $query->lockForUpdate())
+            ->when($lock === Lock::forUpdate, fn(Builder $query) => $query->lockForUpdate())
+            ->when($lock === Lock::shared, fn(Builder $query) => $query->sharedLock())
             ->first();
     }
 
@@ -219,13 +221,14 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @return TModel|null
      */
-    public function findBy(string $field, string|int|float|null|bool $value, array $select = ['*'], bool $lockForUpdate = false)
+    public function findBy(string $field, string|int|float|null|bool $value, array $select = ['*'], ?Lock $lock = null)
     {
         return $this
             ->query()
             ->select($select)
             ->where($field, $value)
-            ->when($lockForUpdate, fn(Builder $query) => $query->lockForUpdate())
+            ->when($lock === Lock::forUpdate, fn(Builder $query) => $query->lockForUpdate())
+            ->when($lock === Lock::shared, fn(Builder $query) => $query->sharedLock())
             ->first();
     }
 

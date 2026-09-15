@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Enums;
 
-enum LockType: string
+enum Lock: string
 {
     case forUpdate = 'lockForUpdate';
     case shared = 'sharedLock';
