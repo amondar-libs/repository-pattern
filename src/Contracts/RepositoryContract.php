@@ -102,7 +102,9 @@ interface RepositoryContract
      *
      * @return TModel|null
      */
-    public function findBy(string $field, string|int|bool $value, array $select = ['*'], Lock|null $lock = null);
+    public function findBy(string $field, string|int|bool|null $value, array $select = ['*'], Lock|null $lock = null);
+
+    public function existsBy(string $field, string|int|bool|null $value): bool;
 
     /**
      * Find record by primary key.

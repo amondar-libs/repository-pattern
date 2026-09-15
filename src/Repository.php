@@ -232,6 +232,14 @@ abstract readonly class Repository implements Contracts\RepositoryContract
             ->first();
     }
 
+    public function existsBy(string $field, string|int|bool|null $value): bool
+    {
+        return $this
+            ->query()
+            ->where($field, $value)
+            ->exists();
+    }
+
     /**
      * Processes and normalizes the given data to a consistent format.
      *
