@@ -232,6 +232,9 @@ abstract readonly class Repository implements Contracts\RepositoryContract
             ->first();
     }
 
+    /**
+     * Determines if a record exists in the database by a specified field and value.
+     */
     public function existsBy(string $field, string|int|bool|null $value, string|int|null $primaryKey = null): bool
     {
         return $this

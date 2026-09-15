@@ -102,7 +102,7 @@ interface RepositoryContract
      *
      * @return TModel|null
      */
-    public function findBy(string $field, string|int|bool|null $value, array $select = ['*'], Lock|null $lock = null);
+    public function findBy(string $field, string|int|bool|null $value, array $select = ['*'], ?Lock $lock = null);
 
     public function existsBy(string $field, string|int|bool|null $value, string|int|null $primaryKey = null): bool;
 
@@ -111,7 +111,7 @@ interface RepositoryContract
      *
      * @return TModel|null
      */
-    public function findById(string $modelId, array $select = ['*'], Lock|null $lock = null);
+    public function findById(string $modelId, array $select = ['*'], ?Lock $lock = null);
 
     /**
      * Processes and normalizes the given data to a consistent format.
