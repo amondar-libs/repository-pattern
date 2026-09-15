@@ -104,6 +104,9 @@ interface RepositoryContract
      */
     public function findBy(string $field, string|int|bool|null $value, array $select = ['*'], ?Lock $lock = null);
 
+    /**
+     * Determines if a record exists in the database by a specified field and value.
+     */
     public function existsBy(string $field, string|int|bool|null $value, string|int|null $primaryKey = null): bool;
 
     /**
