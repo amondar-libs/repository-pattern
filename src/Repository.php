@@ -187,14 +187,46 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      * Deletes a record or multiple records from the database based on the given model and optional key.
      *
      * @param  TModel|string|int  $model  The model instance, primary key, or array of primary keys to be deleted.
-     * @param  string|null  $key  An optional column name to be used for the deletion condition. Defaults to the primary key.
+     * @param  string|null  $key  An optional column name to be used for the deletion condition. Defaults to the
+     *                            primary key.
      */
     public function deleteBy(mixed $model, ?string $key = null): int
     {
-        return $this->query()
+        return $this
+            ->query()
             ->when($key === null, fn($q) => $q->whereKey($model))
             ->when($key !== null, fn($q) => $q->where($key, is_object($model) ? $model->getKey() : $model))
             ->delete();
+    }
+
+    /**
+     * Find record by primary key.
+     *
+     * @return TModel|null
+     */
+    public function findById(string $modelId, array $select = ['*'], bool $lockForUpdate = false)
+    {
+        return $this
+            ->query()
+            ->select($select)
+            ->whereKey($modelId)
+            ->when($lockForUpdate, fn(Builder $query) => $query->lockForUpdate())
+            ->first();
+    }
+
+    /**
+     * Find record by the given field.
+     *
+     * @return TModel|null
+     */
+    public function findBy(string $field, string|int|float|null|bool $value, array $select = ['*'], bool $lockForUpdate = false)
+    {
+        return $this
+            ->query()
+            ->select($select)
+            ->where($field, $value)
+            ->when($lockForUpdate, fn(Builder $query) => $query->lockForUpdate())
+            ->first();
     }
 
     /**

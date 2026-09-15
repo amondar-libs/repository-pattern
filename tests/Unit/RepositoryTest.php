@@ -539,3 +539,54 @@ it('can run transaction directly as callback quietly', function () {
     Event::assertNotDispatched($creatingEvent);
     Event::assertNotDispatched($createdEvent);
 });
+
+it('can fetch by id', function () {
+    $repository = new UserRepository;
+
+    $user = $repository->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    $result = $repository->findById($user->getKey(), ['email']);
+
+    expect($result->email)
+        ->toBe($user->email)
+        ->and($result->toArray())
+        ->toBe([
+            'email' => $user->email,
+        ]);
+});
+
+it('can fetch by any field', function () {
+    $repository = new UserRepository;
+
+    $user = $repository->create([
+        'name'      => 'Oleg Sereda',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ]);
+
+    $result = $repository->findBy('name', $user->name, ['email']);
+
+    expect($result->email)
+        ->toBe($user->email)
+        ->and($result->toArray())
+        ->toBe([
+            'email' => $user->email,
+        ]);
+
+    $result = $repository->findBy('is_active', $user->is_active, ['email']);
+
+    expect($result->email)
+        ->toBe($user->email)
+        ->and($result->toArray())
+        ->toBe([
+            'email' => $user->email,
+        ]);
+});

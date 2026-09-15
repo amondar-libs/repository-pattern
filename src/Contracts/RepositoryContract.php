@@ -97,6 +97,20 @@ interface RepositoryContract
     public function deleteBy(mixed $model, ?string $key = null): int;
 
     /**
+     * Find record by the given field.
+     *
+     * @return TModel|null
+     */
+    public function findBy(string $field, string|int|bool $value, array $select = ['*'], bool $lockForUpdate = false);
+
+    /**
+     * Find record by primary key.
+     *
+     * @return TModel|null
+     */
+    public function findById(string $modelId, array $select = ['*'], bool $lockForUpdate = false);
+
+    /**
      * Processes and normalizes the given data to a consistent format.
      *
      * @param  TData|array<string, mixed>|null  $data  The input data to be normalized.
