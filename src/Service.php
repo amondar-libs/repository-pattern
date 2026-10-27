@@ -4,18 +4,20 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern;
 
+use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Amondar\RepositoryPattern\Proxies\HigherOrderServiceTransactionProxy;
+use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 use Spatie\LaravelData\Data;
 
 /**
  * Class Service
  *
- * @template TModel
- * @template TData
- * @template TRepository
+ * @template TModel of Model
+ * @template TData of Data = Data
+ * @template TRepository of RepositoryContract<TModel, TData> = RepositoryContract<TModel, TData>
  *
- * @property-read HigherOrderServiceTransactionProxy<TModel, TData>|static $transaction
+ * @property-read HigherOrderServiceTransactionProxy<TModel, TData, TRepository, static> $transaction
  *
  * @author Amondar-SO
  */
@@ -25,7 +27,7 @@ abstract class Service
      * Magic method to handle dynamic property access.
      *
      * @param  string  $name  The name of the property being accessed.
-     * @return HigherOrderServiceTransactionProxy|null
+     * @return HigherOrderServiceTransactionProxy<TModel, TData, TRepository, static>
      */
     public function __get(string $name)
     {
@@ -39,7 +41,7 @@ abstract class Service
     /**
      * Defines a method that must be implemented to return a repository instance.
      *
-     * @return Repository<TModel, TData>|TRepository
+     * @return TRepository
      */
     abstract protected function repository();
 

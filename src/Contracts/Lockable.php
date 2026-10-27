@@ -35,7 +35,7 @@ interface Lockable
      *
      * @template TResult
      *
-     * @param  Closure(static): TResult  $callback  The callback to execute while the process is unlocked.
+     * @param  Closure(): TResult  $callback  The callback to execute while the process is unlocked.
      * @return TResult The result of the callback execution.
      */
     public static function unlocked(Closure $callback);

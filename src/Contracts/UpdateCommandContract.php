@@ -4,13 +4,14 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Contracts;
 
+use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
 
 /**
  * Interface UpdateCommandContract
  *
- * @template TModel
- * @template TData
+ * @template TModel of Model
+ * @template TData of Data = Data
  *
  * @author Amondar-SO
  */

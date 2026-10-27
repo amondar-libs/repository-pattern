@@ -5,30 +5,40 @@ declare(strict_types = 1);
 namespace Amondar\RepositoryPattern\Contracts;
 
 use Amondar\RepositoryPattern\Enums\Lock;
-use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
-use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
-use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
+use Amondar\RepositoryPattern\Proxies\HighOrderRepositoryCacheProxy;
+use Amondar\RepositoryPattern\Proxies\HighOrderRepositoryProxy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
 
 /**
  * Interface RepositoryContract
  *
- * @template TModel
- * @template TData
+ * @template TModel of Model
+ * @template TData of Data = Data
+ *
+ * @property-read HighOrderRepositoryCacheProxy<TModel, TData, static> $cache
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $quietly
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $transaction
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $unlocked
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $unlock
  *
  * @see    Builder
  *
  * @mixin Builder<TModel>
  *
- * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
- * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
- * @property-read HigherOrderUnlockedProxy<TModel, TData>|static              $unlocked
- *
  * @author Amondar-SO
  */
 interface RepositoryContract
 {
+    public function usesCache(): bool;
+
+    /**
+     * @param  TModel  $model
+     * @return list<string>
+     */
+    public function getCacheScopesForModel(Model $model): array;
+
     /**
      * Retrieves the class name of the model associated with the repository.
      *

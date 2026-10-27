@@ -15,53 +15,45 @@ use Tests\_fixtures\UserData;
 use Tests\_fixtures\UserRepository;
 
 it('can create user', function () {
-    Event::fake([
-        CreatingEvent::class,
-        CreatedEvent::class,
-    ]);
+    // -------- Arrange
+    Event::fake([CreatingEvent::class, CreatedEvent::class]);
+    $service = App::make(\Tests\_fixtures\UserService::class);
+    $data = [
+        'name'      => 'Amondar-SO',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
+    ];
+    $input = UserData::from($data);
 
-    $model = App::make(\Tests\_fixtures\UserService::class)->create(
-        UserData::from($data = [
-            'name'      => 'Amondar-SO',
-            'email'     => 'my@email.com',
-            'password'  => '123456',
-            'is_active' => true,
-            'is_admin'  => false,
-        ])
-    );
+    // -------- Act
+    $model = $service->create($input);
 
+    // -------- Assert
     expect($model)
         ->name->toBe('Amondar-SO')
         ->email->not->toBe('my@email.com')->toBe('my+1@email.com')
         ->password->not->toBeEmpty()
         ->is_active->toBeTrue()
         ->is_admin->toBeFalse();
-
     Event::assertDispatched(CreatingEvent::class, function (CreatingEvent $event) {
         expect($event->email)->toBe('my+1@email.com');
 
         return true;
     });
-
     Event::assertDispatched(CreatedEvent::class, function (CreatedEvent $event) use ($model, $data) {
-        expect($event->model->getKey())
-            ->toBe($model->getKey())
-            ->and($event->data)
-            ->toMatchArray([
-                ...$data,
-                'email' => 'my+1@email.com',
-            ]);
+        expect($event->model->getKey())->toBe($model->getKey())
+            ->and($event->data)->toMatchArray([...$data, 'email' => 'my+1@email.com']);
 
         return true;
     });
 });
 
 it('can update user', function () {
-    Event::fake([
-        UpdatingEvent::class,
-        UpdatedEvent::class,
-    ]);
-
+    // -------- Arrange
+    Event::fake([UpdatingEvent::class, UpdatedEvent::class]);
+    $service = App::make(\Tests\_fixtures\UserService::class);
     $model = (new UserRepository)->create(UserData::from([
         'name'      => 'Amondar-SO',
         'email'     => 'my@email.com',
@@ -69,58 +61,54 @@ it('can update user', function () {
         'is_active' => true,
         'is_admin'  => false,
     ]));
+    $data = [
+        'name'      => 'Amondar-SO-1', 'email' => 'my+1@email.com',
+        'is_active' => false, 'is_admin' => true,
+    ];
+    $updates = UserData::factory()->from($data);
 
-    $model = App::make(\Tests\_fixtures\UserService::class)->update(
-        $model,
-        UserData::factory()->from($data = [
-            'name'      => 'Amondar-SO-1',
-            'email'     => 'my+1@email.com',
-            'is_active' => false,
-            'is_admin'  => true,
-        ])
-    );
+    // -------- Act
+    $updated = $service->update($model, $updates);
 
-    // Service will unset password if it is NULL.
-    unset($data[ 'password' ]);
-
-    expect($model)
+    // -------- Assert
+    expect($updated)
         ->name->toBe('Amondar-SO-1')
         ->email->toBe('my+1@email.com')
         ->password->not->toBeEmpty()
         ->is_active->toBeFalse()
         ->is_admin->toBeTrue();
-
     Event::assertDispatched(UpdatingEvent::class, function (UpdatingEvent $event) use ($data) {
         expect($event->data)->toMatchArray($data);
 
         return true;
     });
-
-    Event::assertDispatched(UpdatedEvent::class, function (UpdatedEvent $event) use ($model, $data) {
-        expect($event->model->getKey())
-            ->toBe($model->getKey())
-            ->and($event->data)
-            ->toMatchArray($data);
+    Event::assertDispatched(UpdatedEvent::class, function (UpdatedEvent $event) use ($updated, $data) {
+        expect($event->model->getKey())->toBe($updated->getKey())
+            ->and($event->data)->toMatchArray($data);
 
         return true;
     });
 });
 
 it('should fire exception and rollback transaction', function () {
-    Event::fake([
-        CreatingEvent::class,
+    // -------- Arrange
+    Event::fake([CreatingEvent::class]);
+    $service = App::make(\Tests\_fixtures\WrongUserService::class);
+    $repository = new UserRepository;
+    $data = UserData::from([
+        'name'      => 'Amondar-SO',
+        'email'     => 'my@email.com',
+        'password'  => '123456',
+        'is_active' => true,
+        'is_admin'  => false,
     ]);
 
-    expect(fn() => App::make(\Tests\_fixtures\WrongUserService::class)->transaction->onLevel(1)->create(
-        UserData::from([
-            'name'      => 'Amondar-SO',
-            'email'     => 'my@email.com',
-            'password'  => '123456',
-            'is_active' => true,
-            'is_admin'  => false,
-        ])
-    ))->toThrow(Exception::class);
+    // -------- Act
+    $exception = $this->captureException(fn() => $service->transaction->onLevel(1)->create($data));
+    $remainingUsers = $repository->count();
 
-    // Event should wait commit transaction, but it failed.
+    // -------- Assert
+    expect($exception)->toBeInstanceOf(Exception::class)
+        ->and($remainingUsers)->toBe(0);
     Event::assertNotDispatched(CreatingEvent::class);
 });

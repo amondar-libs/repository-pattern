@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" backupGlobals="false" bootstrap="vendor/autoload.php" colors="true" processIsolation="false" stopOnFailure="false" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd" cacheDirectory=".phpunit.cache" backupStaticProperties="false">
+  <testsuites>
+    <testsuite name="Unit">
+      <directory suffix="Test.php">./tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Cache">
+      <directory suffix="Test.php">./tests/Cache</directory>
+    </testsuite>
+    <testsuite name="Measurements">
+      <directory suffix="Test.php">./tests/Measurements</directory>
+    </testsuite>
+  </testsuites>
+  <php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="VERBOSE_OUTPUT" value="false"/>
+    <env name="APP_DEBUG" value="true"/>
+    <env name="BCRYPT_ROUNDS" value="4"/>
+    <env name="CACHE_DRIVER" value="array"/>
+    <env name="MAIL_DRIVER" value="array"/>
+    <env name="QUEUE_CONNECTION" value="sync"/>
+    <env name="DB_CONNECTION" value="testing"/>
+    <env name="SESSION_DRIVER" value="array"/>
+    <env name="APP_KEY" value="base64:6ilZEsLGDq6ksX/NYA+j/IFeIBN/Twbfuvv/Dzu6g9w="/>
+    <env name="APP_URL" value="https://example.com"/>
+  </php>
+  <source>
+    <include>
+      <directory suffix=".php">./src</directory>
+    </include>
+  </source>
+</phpunit>

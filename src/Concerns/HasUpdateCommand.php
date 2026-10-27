@@ -4,17 +4,18 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Concerns;
 
-use Amondar\RepositoryPattern\Repository;
+use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Spatie\LaravelData\Data;
+use Throwable;
 
 /**
  * Trait HasUpdateCommand
  *
- * @template TModel
- * @template TData
- * @template TRepository
+ * @template TModel of Model
+ * @template TData of Data = Data
+ * @template TRepository of RepositoryContract<TModel, TData> = RepositoryContract<TModel, TData>
  *
  * @author Amondar-SO
  */
@@ -23,14 +24,14 @@ trait HasUpdateCommand
     /**
      * Defines a method that must be implemented to return a repository instance.
      *
-     * @return Repository<TModel, TData>|TRepository
+     * @return TRepository
      */
     abstract protected function repository();
 
     /**
      * Stores model relations.
      *
-     * @param  Model|TModel  $model
+     * @param  TModel  $model
      * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
      */
     abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
@@ -71,12 +72,12 @@ trait HasUpdateCommand
      * Updates an existing model with the provided data, performing normalization,
      * triggers for hooks, and handling model relationships. All under pessimistic lock.
      *
-     * @param string|int                 $modelId The model id of the instance to be updated.
-     * @param array<string, mixed>|TData $data    The data used to update the model. This can be an array or a Data
+     * @param  string|int  $modelId  The model id of the instance to be updated.
+     * @param  array<string, mixed>|TData  $data  The data used to update the model. This can be an array or a Data
      *                                            object.
-     *
      * @return TModel Returns the updated model instance, with related data loaded if applicable.
-     * @throws \Throwable
+     *
+     * @throws Throwable
      */
     public function lockAndUpdate(string|int $modelId, array|Data $data)
     {
@@ -102,7 +103,7 @@ trait HasUpdateCommand
     /**
      * Allows modifications or actions to be performed on data before updating a model.
      *
-     * @param  TModel|Model  $model
+     * @param  TModel  $model
      * @param  array<string, mixed>|TData  &$data  The data array that will be updated. Passed by reference to allow modifications.
      */
     protected function updatingHook(Model $model, array|Data &$data): void
@@ -115,7 +116,7 @@ trait HasUpdateCommand
      * Performs actions or modifications immediately after a model has been fully updated, including all its
      * relationships.
      *
-     * @param  Model  $model  The model instance that has been updated.
+     * @param  TModel  $model  The model instance that has been updated.
      * @param  array<string, mixed>|TData  $data  The updated data associated with the model.
      */
     protected function updatedHook(Model $model, array|Data $data): void

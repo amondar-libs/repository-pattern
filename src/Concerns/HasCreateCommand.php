@@ -4,17 +4,17 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Concerns;
 
+use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Amondar\RepositoryPattern\Exceptions\ModelNotSaved;
-use Amondar\RepositoryPattern\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelData\Data;
 
 /**
  * Trait HasCreateCommand
  *
- * @template TModel
- * @template TData
- * @template TRepository
+ * @template TModel of Model
+ * @template TData of Data = Data
+ * @template TRepository of RepositoryContract<TModel, TData> = RepositoryContract<TModel, TData>
  *
  * @author Amondar-SO
  */
@@ -23,14 +23,14 @@ trait HasCreateCommand
     /**
      * Defines a method that must be implemented to return a repository instance.
      *
-     * @return Repository<TModel, TData>|TRepository
+     * @return TRepository
      */
     abstract protected function repository();
 
     /**
      * Stores model relations.
      *
-     * @param  Model|TModel  $model
+     * @param  TModel  $model
      * @param  array<string, mixed>|TData  $data  The data array to be updated with model relation information, passed by reference.
      */
     abstract protected function storeModelRelations(Model $model, array|Data &$data): void;
@@ -82,7 +82,7 @@ trait HasCreateCommand
     /**
      * Executes actions immediately after the model has been fully created with all relations.
      *
-     * @param  TModel|Model  $model
+     * @param  TModel  $model
      * @param  array<string, mixed>|TData  $data  The primary data of the model that was saved.
      */
     protected function createdHook(Model $model, array|Data $data): void

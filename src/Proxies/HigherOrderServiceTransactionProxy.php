@@ -4,17 +4,22 @@ declare(strict_types = 1);
 
 namespace Amondar\RepositoryPattern\Proxies;
 
+use Amondar\RepositoryPattern\Contracts\RepositoryContract;
 use Amondar\RepositoryPattern\Service;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Spatie\LaravelData\Data;
 use Throwable;
 
 /**
  * Class HigherOrderDBTransactionProxy
  *
- * @template TModel
- * @template TData
+ * @template TModel of Model
+ * @template TData of Data = Data
+ * @template TRepository of RepositoryContract<TModel, TData> = RepositoryContract<TModel, TData>
+ * @template TService of Service<TModel, TData, TRepository> = Service<TModel, TData, TRepository>
  *
- * @mixin Service<TModel, TData>
+ * @mixin TService
  *
  * @see Service
  */
@@ -23,7 +28,7 @@ readonly class HigherOrderServiceTransactionProxy
     /**
      * HigherOrderDBTransactionProxy constructor.
      *
-     * @param  Service<TModel, TData>  $service
+     * @param  TService  $service
      */
     public function __construct(private Service $service, private int $transactionLevel = 0)
     {

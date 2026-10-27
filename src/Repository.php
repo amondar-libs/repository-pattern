@@ -9,27 +9,37 @@ use Amondar\RepositoryPattern\Attributes\UseModel;
 use Amondar\RepositoryPattern\Contracts\Lockable;
 use Amondar\RepositoryPattern\Enums\Lock;
 use Amondar\RepositoryPattern\Exceptions\RepositoryModelNotFound;
-use Amondar\RepositoryPattern\Proxies\HigherOrderQuietlyProxy;
-use Amondar\RepositoryPattern\Proxies\HigherOrderRepositoryTransactionProxy;
-use Amondar\RepositoryPattern\Proxies\HigherOrderUnlockedProxy;
+use Amondar\RepositoryPattern\Proxies\HighOrderRepositoryCacheProxy;
+use Amondar\RepositoryPattern\Proxies\HighOrderRepositoryProxy;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use ReflectionMethod;
 use RuntimeException;
 use Spatie\LaravelData\Data;
 
 /**
  * Class Repository
  *
- * @template TModel
- * @template TData
+ * @template TModel of Model
+ * @template TData of Data = Data
  *
- * @property-read HigherOrderQuietlyProxy<TModel, TData>|static               $quietly
- * @property-read HigherOrderRepositoryTransactionProxy<TModel, TData>|static $transaction
- * @property-read HigherOrderUnlockedProxy<TModel, TData>|static              $unlocked
+ * @property-read HighOrderRepositoryCacheProxy<TModel, TData, static> $cache
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $quietly
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $transaction
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $unlocked
+ * @property-read HighOrderRepositoryProxy<TModel, TData, static> $unlock
+ *
+ * @mixin Builder<TModel>
  *
  * @implements Contracts\RepositoryContract<TModel, TData>
  */
 abstract readonly class Repository implements Contracts\RepositoryContract
 {
+    /** @var HighOrderRepositoryCacheProxy<TModel, TData, static> */
+    private HighOrderRepositoryCacheProxy $cacheProxy;
+
     /**
      * Model class to use in repository calls.
      *
@@ -49,7 +59,7 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      *
      * @throws RepositoryModelNotFound If no attribute is found for the given class.
      */
-    public function __construct()
+    public function __construct(?CacheRepository $cacheRepository = null)
     {
         $result = Attribute::for(UseModel::class)
             ->ascend()
@@ -62,29 +72,44 @@ abstract readonly class Repository implements Contracts\RepositoryContract
         $this->modelClass = $result[0]->attribute->modelClass;
 
         $this->useLockable = is_subclass_of($this->modelClass, Lockable::class);
+        $this->cacheProxy = new HighOrderRepositoryCacheProxy($this, $cacheRepository);
+
+        // Detect missing scope configuration before any write can persist data.
+        if ($this->usesCache()) {
+            if ((new ReflectionMethod($this, 'getModelBaseScope'))->getDeclaringClass()->getName() === self::class) {
+                throw new RuntimeException(static::class . ' must implement getModelBaseScope() when repository caching is enabled.');
+            }
+
+            $this->cacheProxy->getStore();
+        }
+    }
+
+    /**
+     * Gives each repository clone an independent cache dependency stack.
+     * Subclasses overriding this method must call parent::__clone().
+     */
+    public function __clone()
+    {
+        $this->cacheProxy = $this->cacheProxy->forRepository($this);
     }
 
     /**
      * Dynamically retrieves the value of a property.
      *
      *
-     * @return HigherOrderQuietlyProxy|HigherOrderRepositoryTransactionProxy|HigherOrderUnlockedProxy|null
+     * @return HighOrderRepositoryProxy<TModel, TData, static>|HighOrderRepositoryCacheProxy<TModel, TData, static>
      */
-    public function __get(mixed $key)
+    public function __get(mixed $key): HighOrderRepositoryProxy|HighOrderRepositoryCacheProxy
     {
-        if ($key === 'quietly') {
-            return $this->makeQuietlyProxy();
-        }
-
-        if ($key === 'transaction') {
-            return $this->makeTransactionProxy();
-        }
-
-        if ($key === 'unlocked' && $this->useLockable) {
-            return $this->makeUnlockedProxy();
-        }
-
-        throw new RuntimeException("Undefined property: $key");
+        return match ($key) {
+            'cache'       => $this->cacheProxy,
+            'quietly'     => new HighOrderRepositoryProxy($this, beQuiet: true),
+            'transaction' => new HighOrderRepositoryProxy($this, useTransaction: true),
+            'unlocked', 'unlock' => $this->useLockable
+                ? new HighOrderRepositoryProxy($this, beUnlocked: true)
+                : throw new RuntimeException("Undefined property: $key"),
+            default => throw new RuntimeException("Undefined property: $key"),
+        };
     }
 
     /**
@@ -97,6 +122,33 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     public function __call(mixed $method, mixed $parameters)
     {
         return $this->query()->$method(...$parameters);
+    }
+
+    public function usesCache(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Resolves the base and additional dependency scopes for a model.
+     *
+     * @param  TModel  $model
+     * @return list<string>
+     */
+    public function getCacheScopesForModel(Model $model): array
+    {
+        $scopes = [
+            $this->getModelBaseScope($model),
+            ...$this->getModelAdditionalScopes($model),
+        ];
+
+        foreach ($scopes as $scope) {
+            if ( ! is_string($scope) || $scope === '') {
+                throw new RuntimeException('Model cache scopes must be non-empty strings.');
+            }
+        }
+
+        return array_values(array_unique($scopes));
     }
 
     /**
@@ -138,7 +190,16 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function create(array|Data $data)
     {
-        return tap($this->fillTheModel($this->makeModel(), $data))->save();
+        $model = $this->fillTheModel($this->makeModel(), $data);
+
+        if ($model->save() && $this->usesCache()) {
+            $this->invalidateCacheAfterCommit(
+                $model->getConnection(),
+                $this->getCacheScopesForModel($model)
+            );
+        }
+
+        return $model;
     }
 
     /**
@@ -151,7 +212,31 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function update($model, array|Data $data)
     {
-        return tap($this->fillTheModel($model, $data))->save();
+        $previousScopes = [];
+
+        if ($this->usesCache()) {
+            // Capture both the caller's original scope and the current persisted
+            // scope: another write may have moved a stale model to a new owner.
+            $previous = clone $model;
+            $previous->setRawAttributes($model->getRawOriginal(), true);
+            $previous->setRelations([]);
+            $previousScopes = $this->getCacheScopesForModel($previous);
+
+            if ($persisted = $model->fresh()) {
+                $previousScopes = [...$previousScopes, ...$this->getCacheScopesForModel($persisted)];
+            }
+        }
+
+        $this->fillTheModel($model, $data);
+
+        if ($model->save() && $this->usesCache()) {
+            $this->invalidateCacheAfterCommit(
+                $model->getConnection(),
+                [...$previousScopes, ...$this->getCacheScopesForModel($model)]
+            );
+        }
+
+        return $model;
     }
 
     /**
@@ -166,11 +251,17 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function upsert(array|Data $data, array|string $uniqueBy, ?array $update = null): int
     {
-        return $this->query()->upsert(
-            $this->normalizeData($data),
-            $uniqueBy,
-            $update
-        );
+        $values = $this->normalizeData($data);
+        $query = $this->query();
+        $affected = $query->upsert($values, $uniqueBy, $update);
+
+        if ($values !== []) {
+            // Upsert does not return models or their previous scope fields.
+            // Invalidate the entire repository instead of guessing dependencies.
+            $this->invalidateCacheAfterCommit($query->getConnection());
+        }
+
+        return $affected;
     }
 
     /**
@@ -181,7 +272,13 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function push($model): bool
     {
-        return $model->push();
+        try {
+            return $model->push();
+        } finally {
+            // Push can persist the root before a related save fails or throws.
+            // Flush conservatively; a surrounding rollback discards the callback.
+            $this->invalidateCacheAfterCommit($model->getConnection());
+        }
     }
 
     /**
@@ -193,11 +290,34 @@ abstract readonly class Repository implements Contracts\RepositoryContract
      */
     public function deleteBy(mixed $model, ?string $key = null): int
     {
-        return $this
+        $query = $this
             ->query()
             ->when($key === null, fn($q) => $q->whereKey($model))
-            ->when($key !== null, fn($q) => $q->where($key, is_object($model) ? $model->getKey() : $model))
-            ->delete();
+            ->when($key !== null, fn($q) => $q->where($key, $model instanceof Model ? $model->getAttribute($key) : $model));
+
+        $scopes = [];
+
+        if ($this->usesCache()) {
+            // Query deletes bypass individual model events. Capture scope data
+            // before the affected records disappear.
+            foreach ((clone $query)->cursor() as $record) {
+                $scopes = array_values(array_unique([
+                    ...$scopes,
+                    ...$this->getCacheScopesForModel($record),
+                ]));
+            }
+        }
+
+        $deleted = $query->delete();
+
+        if ($deleted > 0) {
+            $this->invalidateCacheAfterCommit(
+                $query->getConnection(),
+                $scopes === [] ? null : $scopes
+            );
+        }
+
+        return $deleted;
     }
 
     /**
@@ -255,33 +375,44 @@ abstract readonly class Repository implements Contracts\RepositoryContract
     }
 
     /**
-     * Creates and returns a new instance of the HigherOrderQuietlyProxy.
+     * Invalidates dependency scopes after the outermost successful commit.
+     * A null scope list flushes all entries tagged with this repository class.
      *
-     * @return HigherOrderQuietlyProxy<TModel, TData>
+     * @param  list<string>|null  $scopes
      */
-    protected function makeQuietlyProxy(): HigherOrderQuietlyProxy
+    protected function invalidateCacheAfterCommit(Connection $connection, ?array $scopes = null): void
     {
-        return new HigherOrderQuietlyProxy($this);
+        if ( ! $this->usesCache() || $scopes === []) {
+            return;
+        }
+
+        $scopes = $scopes === null ? null : array_values(array_unique($scopes));
+        $invalidate = $scopes === null
+            ? fn() => $this->cacheProxy->forget()
+            : fn() => $this->cacheProxy->invalidate(...$scopes);
+
+        if ($connection->transactionLevel() > 0) {
+            $connection->afterCommit($invalidate);
+        } else {
+            $invalidate();
+        }
     }
 
     /**
-     * Creates and returns a new transaction proxy instance for managing repository transactions.
-     *
-     * @return HigherOrderRepositoryTransactionProxy<TModel, TData>
+     * @param  TModel  $model
      */
-    protected function makeTransactionProxy(): HigherOrderRepositoryTransactionProxy
+    protected function getModelBaseScope(Model $model): string
     {
-        return new HigherOrderRepositoryTransactionProxy($this);
+        throw new RuntimeException(static::class . ' must implement getModelBaseScope() to cache model results.');
     }
 
     /**
-     * Creates and returns a new instance of HigherOrderUnlockedProxy for the current object.
-     *
-     * @return HigherOrderUnlockedProxy<TModel, TData>
+     * @param  TModel  $model
+     * @return list<string>
      */
-    protected function makeUnlockedProxy(): HigherOrderUnlockedProxy
+    protected function getModelAdditionalScopes(Model $model): array
     {
-        return new HigherOrderUnlockedProxy($this);
+        return [];
     }
 
     /**

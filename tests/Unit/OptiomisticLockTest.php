@@ -7,119 +7,118 @@ use Tests\_fixtures\VersionedPost;
 use Tests\_fixtures\VersionedPostRepository;
 
 it('should apply version field during creation', function () {
-    $model = VersionedPost::create([
+    // -------- Arrange
+    $data = [
         'title' => $this->faker->title,
         'body'  => $this->faker->sentence(5),
-    ]);
+    ];
 
+    // -------- Act
+    $model = VersionedPost::create($data);
+
+    // -------- Assert
     expect($model->lockVersion())->toBe(1);
 });
 
 it('should apply versioning logic during update', function () {
+    // -------- Arrange
     $model = VersionedPost::create([
         'title' => $this->faker->title,
         'body'  => $this->faker->sentence(5),
     ]);
 
+    // -------- Act
     $model->title = 'My title';
     $model->save();
 
+    // -------- Assert
     expect($model->lockVersion())->toBe(2);
 });
 
 it('should throw an exception on race condition', function () {
+    // -------- Arrange
     $model = VersionedPost::create([
         'title' => $this->faker->title,
         'body'  => $this->faker->sentence(5),
     ]);
-
     $same = $model->fresh();
+    $expected = OptimisticLockException::fire(VersionedPost::class, 1, 2);
 
+    // -------- Act
     $model->title = 'My title';
     $model->save();
-
-    expect($model->lockVersion())->toBe(2);
-
+    $updatedVersion = $model->lockVersion();
     $same->title = 'My title 2';
+    $exception = $this->captureException(fn() => $same->save());
 
-    expect(fn() => $same->save())
-        ->toThrow(OptimisticLockException::fire(VersionedPost::class, 1, 2))
+    // -------- Assert
+    expect($updatedVersion)->toBe(2)
+        ->and($exception)->toBeInstanceOf(OptimisticLockException::class)
+        ->and($exception->getMessage())->toBe($expected->getMessage())
         ->and($same->lockVersion())->toBe(1);
 });
 
 it('should work with unblocking', function () {
+    // -------- Arrange
     $model = VersionedPost::create([
         'title' => $this->faker->title,
         'body'  => $this->faker->sentence(5),
     ]);
-
     $same = $model->fresh();
 
+    // -------- Act
     $model->title = 'My title';
     $model->save();
-
-    expect($model->lockVersion())->toBe(2);
-
+    $updatedVersion = $model->lockVersion();
     $same->title = 'My title 2';
     $same->saveUnlocked();
+    $freshSame = $same->fresh();
+    $freshModel = $model->fresh();
 
-    expect($same->fresh())
-        ->lockVersion()->toBe(2)
-        ->title->toBe('My title 2')
-        ->and($model->fresh())
-        ->lockVersion()->toBe(2)
-        ->title->toBe('My title 2');
+    // -------- Assert
+    expect($updatedVersion)->toBe(2)
+        ->and($freshSame)->lockVersion()->toBe(2)->title->toBe('My title 2')
+        ->and($freshModel)->lockVersion()->toBe(2)->title->toBe('My title 2');
 });
 
 it('can run optimistic lock thorough repository', function () {
-    $repo = new VersionedPostRepository;
-
-    $model = $repo->create([
+    // -------- Arrange
+    $repository = new VersionedPostRepository;
+    $model = $repository->create([
         'title' => $this->faker->title,
         'body'  => $this->faker->sentence(5),
     ]);
-
     $same = $model->fresh();
+    $expected = OptimisticLockException::fire(VersionedPost::class, 1, 2);
 
-    $model = $repo->update($model, [
-        'title' => 'My title',
-    ]);
+    // -------- Act
+    $updated = $repository->update($model, ['title' => 'My title']);
+    $exception = $this->captureException(fn() => $repository->update($same, ['title' => 'My title 2']));
 
-    expect($model->lockVersion())
-        ->toBe(2)
-        ->and(fn() => $repo->update($same, [
-            'title' => 'My title 2',
-        ]))
-        ->toThrow(OptimisticLockException::fire(VersionedPost::class, 1, 2))
+    // -------- Assert
+    expect($updated->lockVersion())->toBe(2)
+        ->and($exception)->toBeInstanceOf(OptimisticLockException::class)
+        ->and($exception->getMessage())->toBe($expected->getMessage())
         ->and($same->lockVersion())->toBe(1);
 });
 
 it('can run unlocked thorough repository', function () {
-    $repo = new VersionedPostRepository;
-
-    $model = $repo->create([
+    // -------- Arrange
+    $repository = new VersionedPostRepository;
+    $model = $repository->create([
         'title' => $this->faker->title,
         'body'  => $this->faker->sentence(5),
     ]);
-
     $same = $model->fresh();
 
-    $model = $repo->unlocked->update($model, [
-        'title' => 'My title',
-    ]);
+    // -------- Act
+    $updated = $repository->unlocked->update($model, ['title' => 'My title']);
+    $updatedVersion = $updated->lockVersion();
+    $unlocked = $repository->unlocked->update($same, ['title' => 'My title 2']);
+    $persisted = $model->fresh();
 
-    expect($model->lockVersion())
-        ->toBe(2)
-        ->and($repo->unlocked->update($same, [
-            'title' => 'My title 2',
-        ]))
-        ->title
-        ->toBe('My title 2')
-        ->lockVersion()
-        ->toBe(2)
-        ->and($model->fresh())
-        ->title
-        ->toBe('My title 2')
-        ->lockVersion()
-        ->toBe(2);
+    // -------- Assert
+    expect($updatedVersion)->toBe(2)
+        ->and($unlocked)->title->toBe('My title 2')->lockVersion()->toBe(2)
+        ->and($persisted)->title->toBe('My title 2')->lockVersion()->toBe(2);
 });
