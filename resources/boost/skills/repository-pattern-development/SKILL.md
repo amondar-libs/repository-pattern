@@ -1,20 +1,24 @@
 ---
 name: repository-pattern-development
-description: Build and maintain Laravel repositories and services using amondar-libs/repository-pattern. Use for UseModel bindings, repository CRUD and DTOs, higher-order quiet/transaction/unlocked calls, optimistic or pessimistic locking, dependency-scoped result caching, clone isolation, and related Pest tests or PhpStorm types. Apply to this package and its consumers, not generic repository-pattern design without this package.
+description: Implement and troubleshoot amondar-libs/repository-pattern repositories, services, locking, and dependency-scoped caching. Use when application or package changes involve these APIs, their tests, or proxy IDE types.
 license: MIT
 ---
 
 # Repository Pattern Development
 
-Use the installed package's APIs and preserve the application's existing architecture. This skill covers `Amondar\RepositoryPattern`; it does not require converting unrelated Eloquent code to repositories.
+## When to use this skill
+
+Use this skill when implementing or maintaining `Amondar\RepositoryPattern` repositories and services, configuring locking or result caching, or troubleshooting their tests and proxy IDE types. Follow the application's existing namespaces, DTOs, and schema.
 
 ## Establish context
 
 Locate the package root: this checkout when its `composer.json` names `amondar-libs/repository-pattern`, otherwise its Composer installation, usually `vendor/amondar-libs/repository-pattern`. Paths prefixed with `PACKAGE_ROOT` in these references mean that location, not the copied skill directory.
 
-Inspect the relevant installed source and application models, migrations, repositories, services, cache configuration, and tests. Installed code takes precedence over examples when versions differ. Use Boost's application/schema information and version-aware documentation search when available and relevant; local source is the fallback. Do not install Boost, change stores, or edit a consumer's vendor files just to use this skill.
+Inspect the relevant installed source and application code before applying examples; installed code takes precedence when versions differ. Use Boost's application/schema information and documentation search when useful and available. In consumers, extend application code rather than editing vendor files.
 
-## Load only the relevant references
+## Features
+
+Load only the references relevant to the current task:
 
 - Model binding, arrays/DTOs, CRUD, builder passthrough, and extension points: [Repository basics](references/repository-basics.md).
 - Quiet/transaction/unlocked composition, callbacks, depth rules, and both locking strategies: [Modifiers and locking](references/modifiers-and-locking.md).
@@ -24,34 +28,24 @@ Inspect the relevant installed source and application models, migrations, reposi
 - Singleton/clone isolation, concurrent tasks, generic PHPDoc, and custom method completion: [Concurrency and types](references/concurrency-and-types.md).
 - Package versus application tests, Pest AAA, commit callbacks, and measurements: [Testing and maintenance](references/testing-and-maintenance.md).
 
-Read both cache references for a change that affects reads and writes. Follow their links only when the additional topic matters.
+Read both cache references when a change affects reads and writes. Otherwise load only the reference needed for the task.
 
-## Work through the behavior
+## Implementation decisions
 
-For a small change, implement directly. For a multi-file feature or a cache/locking change, make a short task-specific plan covering the applicable steps:
+For changes spanning cache, writes, or locking, make a short plan around the relevant boundaries:
 
-1. Identify the model, repository, DTO, database connection, and required behavior.
-2. Map each cached read to its scopes and every write to the old/new scopes it can affect. Decide the transaction boundary and how bulk writes refresh dependent views.
-3. Implement through existing repository/service extension points. Preserve parent construction and write invalidation when extending them.
-4. Verify observable behavior with the project's tests; for caching, exercise real misses/hits outside automatic test transactions and verify commit/rollback timing separately.
-5. Report changed behavior, checks actually run, and remaining limits. Do not claim an IDE inspection, cache driver, or concurrency mode was verified solely because runtime tests passed.
+1. Identify the model connection, transaction owner, and repository/service extension points. Preserve parent construction and invalidation when overriding base methods.
+2. Map cached reads to dependencies and writes to old/new scopes. Declare list dependencies before queries so empty results and future matching rows are covered. Include tenant or user context in method arguments when it changes results.
+3. Choose explicit invalidation for custom or cross-repository writes; a repository-wide flush does not automatically refresh another repository's logical scopes.
+4. Verify cache misses/hits outside wrapping test transactions, then commit/rollback timing separately. Runtime tests alone cannot verify PhpStorm completion or a different cache/concurrency driver.
 
-Skip inapplicable steps. Do not expand a documentation or application task into a package rewrite.
+Skip inapplicable steps and keep the user's requested verification scope.
 
-## Package invariants
+## API guardrails
 
-- Repository subclasses are readonly; service subclasses are not. Arrays and Spatie Data are accepted, but omitted fields and null values are not interchangeable.
-- Use the current class names: `HighOrderRepositoryProxy`, `HighOrderRepositoryCacheProxy`, and `HigherOrderServiceTransactionProxy`. The old repository proxy classes were removed.
-- Caching is enabled by overriding `usesCache()`, not by inventing a property or constant. An enabled repository needs an implemented model base scope and a tagged Laravel store.
-- Explicit `->cache` opts a declared read method into caching. Cache hits skip its body; never route required writes or side effects through that path.
-- Owner/list scopes must be declared before queries. Returned models cannot describe empty results or future matching rows.
-- Shared cache reads are bypassed inside an active model-connection transaction. Base writes defer invalidation to that connection's outermost commit.
-- Cache and write-modifier proxy chains are separate APIs; do not invent `->cache->quietly` or `->transaction->cache`.
-- Repository-wide flushes do not automatically refresh other repositories' logical scopes. Design shared dependencies explicitly.
-- Do not promise frame isolation from a shallow proxy clone or implicit cross-process inheritance.
+- Repository subclasses are readonly; services are not. Omitted fields and explicit nulls have different update semantics.
+- Enable caching with `usesCache()` and implement `getModelBaseScope()` with a tagged Laravel store; no `shouldUseCache` property exists.
+- `->cache` is for declared public instance read methods. Hits skip the method body, so required mutations and side effects cannot use this path.
+- Cache and write-modifier chains are separate APIs. Use repository clones for independent cache frames; shallow proxy clones and process boundaries do not propagate dependency frames.
 
-## Installation and maintenance context
-
-This package ships this skill at `resources/boost/skills/repository-pattern-development`. Its references are self-contained so Boost can copy the entire skill to the consumer's configured agent directory.
-
-When maintaining the package, keep these references consistent with `PACKAGE_ROOT/src`, `PACKAGE_ROOT/README.md`, and `PACKAGE_ROOT/docs/cache.md`. In a consuming application, extend application code rather than editing the installed skill or package vendor files. Preserve the user's requested task scope and verification constraints.
+When maintaining this package, keep references aligned with `PACKAGE_ROOT/src`, `README.md`, and `docs/cache.md`. Keep links within this skill folder portable: Boost copies the folder into the consuming application's agent directory.

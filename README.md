@@ -326,9 +326,9 @@ Use custom methods and the protected filling/scope hooks for application behavio
 
 `WithAttributesCache` is an existing contract, but the current repository and optimistic-lock attribute lookups do not call `getAttributesCache()` or configure an attribute parser cache. Implementing that contract alone does not enable metadata caching. The result cache described here is a separate system.
 
-## Laravel Boost skill
+## Laravel Boost AI support
 
-The package ships a [repository-pattern-development skill](resources/boost/skills/repository-pattern-development/SKILL.md) with focused references for repositories, services, modifiers, locking, cache reads/invalidation, concurrency, IDE types, and tests. It includes a short workflow for changes that span those boundaries.
+The package ships [AI guidelines](resources/boost/guidelines/core.blade.php) for essential conventions loaded upfront, plus a [repository-pattern-development skill](resources/boost/skills/repository-pattern-development/SKILL.md) activated on demand. The skill links focused references for repositories, services, modifiers, locking, cache reads/invalidation, concurrency, IDE types, and tests.
 
 In a consuming application that already has Laravel Boost installed, run:
 
@@ -336,7 +336,7 @@ In a consuming application that already has Laravel Boost installed, run:
 php artisan boost:install
 ~~~
 
-Select this package's skills when prompted. After package updates, refresh the installed resources with `php artisan boost:update`. The skill follows [Boost's package skill format](https://laravel.com/docs/13.x/boost#third-party-package-skills); no runtime Boost dependency or PHP registration was added to this package.
+Enable guidelines and skills for your selected agents when prompted. After package updates, refresh the installed resources with `php artisan boost:update`. Files follow Boost's [third-party guideline](https://laravel.com/framework/docs/13.x/boost#third-party-package-ai-guidelines) and [package skill](https://laravel.com/framework/docs/13.x/boost#third-party-package-skills) conventions; no runtime Boost dependency or PHP registration is required.
 
 ## Development
 
